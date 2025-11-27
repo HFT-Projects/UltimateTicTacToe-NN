@@ -51,7 +51,7 @@ public class UTTT_FFN {
     // ---------------------------
     //        NN-UPDATE
     // ---------------------------
-    public void train(double[] state, double[] newState, boolean game_over, int action, int reward) {
+    public void train(double[] state, double[] newState, boolean game_over, int action, int[] validActions, int reward) {
         double[] q_s = net.predictQ(state);
         double[] q_sp = net.predictQ(newState);
 
@@ -62,11 +62,12 @@ public class UTTT_FFN {
         if (game_over) {
             targetValue = reward;
         } else {
-            double maxNext = q_sp[0];
-            for (int a = 1; a < Main.ACTIONS; a++) { //todo: fix that only valid actions are considered (-> what if no valid actions left in local board?!)
-                if (q_sp[a] > maxNext)
-                    maxNext = q_sp[a];
-            }
+            double maxNext = q_sp[validActions[0]];
+            if (validActions.length > 1)
+                for (int a = 1; a < validActions.length; a++) { //todo: fix that only valid actions are considered (-> what if no valid actions left in local board?!)
+                    if (q_sp[validActions[a]] > maxNext)
+                        maxNext = q_sp[validActions[a]];
+                }
             targetValue = reward + Main.GAMMA * maxNext;
         }
 

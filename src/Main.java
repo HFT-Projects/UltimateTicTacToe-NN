@@ -48,44 +48,49 @@ class Main {
         // local (inner) board which is next played by player X
         LocalBoard localBoardX = globalBoard.getCell((int) (Math.random() * 9));
         LocalBoard localBoardO;
+        MoveResult resultX;
+        MoveResult resultO = null;
 
         while (true) {
-            ENDED_STATUS endedStatus;
-
             // let the NN make a move for player X
-            int actionX = move(localBoardX, globalBoard, netX, PLAYER.X);
+            resultX = move(localBoardX, globalBoard, netX, PLAYER.X);
 
             // exit if game has ended
-            endedStatus = globalBoard.ended();
-            if (endedStatus != null) {
+            if (resultX.endedStatus != null) {
                 System.out.println(boardToString(globalBoard));
-                System.out.println("WON: " + endedStatus);
-                break;
-            }
-
-            localBoardO = globalBoard.getCell(actionX);
-
-
-            // let the NN make a move for player O
-            int actionO = move(localBoardO, globalBoard, netO, PLAYER.O);
-
-            // exit if game has ended
-            endedStatus = globalBoard.ended();
-            if (endedStatus != null) {
-                System.out.println(boardToString(globalBoard));
-                System.out.println("WON: " + endedStatus);
+                System.out.println("WON: " + resultX.endedStatus);
                 break;
             }
 
             // select which local board they players have to play next
-            localBoardX = globalBoard.getCell(actionO);
+            // based on the last action of player O if that board is still available
+            localBoardO = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultX.action));
+            // train net x now that new state is known
+            if (resultO != null)
+                netO.train(resultO.oldState, resultX.newState, resultO.endedStatus != null, resultO.action, localBoardO.getValidActions(), resultO.reward);
+
+
+            // let the NN make a move for player O
+            resultO = move(localBoardO, globalBoard, netO, PLAYER.O);
+
+            // exit if game has ended
+            if (resultO.endedStatus != null) {
+                System.out.println(boardToString(globalBoard));
+                System.out.println("WON: " + resultO.endedStatus);
+                break;
+            }
+
+            // select which local board they players have to play next
+            // based on the last action of player O if that board is still available
+            localBoardX = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultO.action));
+            // train net x now that new state is known
+            netX.train(resultX.oldState, resultO.newState, resultX.endedStatus != null, resultX.action, localBoardX.getValidActions(), resultX.reward);
         }
     }
 
-    public static int move(LocalBoard localBoard, GlobalBoard globalBoard, UTTT_FFN net, PLAYER player) {
-        // check if selected local board is playable. If not -> select by random
-        localBoard = globalBoard.getRemainingLocalBoard(localBoard);
+    private record MoveResult(int action, int reward, ENDED_STATUS endedStatus, double[] oldState, double[] newState) {}
 
+    private static MoveResult move(LocalBoard localBoard, GlobalBoard globalBoard, UTTT_FFN net, PLAYER player) {
         // encode state for NN
         double[] state = localBoard.getStateDouble();
 
@@ -100,9 +105,7 @@ class Main {
 
         int reward = calculateReward(endedStatus, localBoard.ended(), player);
 
-        net.train(state, newState, endedStatus != null, action, reward);
-
-        return action;
+        return new MoveResult(action, reward, endedStatus, state, newState);
     }
 
 
