@@ -33,6 +33,11 @@ class Main {
             runEpisode();
             System.out.println("Episode finished: " + ep);
             episode++;
+            if (Math.random() > 0.5) {
+                UTTT_FFN tmp = netX;
+                netX = netO;
+                netO = tmp;
+            }
         }
     }
 
