@@ -42,8 +42,7 @@ class Main {
 
         // local (inner) board which is next played by player X
         LocalBoard localBoardX = globalBoard.getCell((int) (Math.random() * 9));
-        // local (inner) board which is next played by player O
-        LocalBoard localBoardO = globalBoard.getCell((int) (Math.random() * 9));
+        LocalBoard localBoardO;
 
         while (true) {
             ENDED_STATUS endedStatus;
@@ -59,6 +58,8 @@ class Main {
                 break;
             }
 
+            localBoardO = globalBoard.getCell(actionX);
+
 
             // let the NN make a move for player O
             int actionO = move(localBoardO, globalBoard, netO, PLAYER.O);
@@ -72,8 +73,7 @@ class Main {
             }
 
             // select which local board they players have to play next
-            localBoardX = globalBoard.getCell(actionX);
-            localBoardO = globalBoard.getCell(actionO);
+            localBoardX = globalBoard.getCell(actionO);
         }
     }
 
