@@ -57,6 +57,11 @@ class Main {
 
             // exit if game has ended
             if (resultX.endedStatus != null) {
+                // pre-pone training if game ended
+                netX.train(resultX.oldState, resultX.newState, true, resultX.action, null, resultX.reward);
+                if (resultO != null)
+                    netO.train(resultO.oldState, resultX.newState, true, resultO.action, null, resultO.reward);
+
                 System.out.println(boardToString(globalBoard));
                 System.out.println("WON: " + resultX.endedStatus);
                 break;
@@ -67,7 +72,7 @@ class Main {
             localBoardO = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultX.action));
             // train net x now that new state is known
             if (resultO != null)
-                netO.train(resultO.oldState, resultX.newState, resultO.endedStatus != null, resultO.action, localBoardO.getValidActions(), resultO.reward);
+                netO.train(resultO.oldState, resultX.newState, false, resultO.action, localBoardO.getValidActions(), resultO.reward);
 
 
             // let the NN make a move for player O
@@ -75,6 +80,9 @@ class Main {
 
             // exit if game has ended
             if (resultO.endedStatus != null) {
+                // pre-pone training if game ended
+                netO.train(resultO.oldState, resultO.newState, true, resultO.action, null, resultO.reward);
+                netX.train(resultX.oldState, resultO.newState, true, resultX.action, null, resultX.reward);
                 System.out.println(boardToString(globalBoard));
                 System.out.println("WON: " + resultO.endedStatus);
                 break;
@@ -84,7 +92,7 @@ class Main {
             // based on the last action of player O if that board is still available
             localBoardX = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultO.action));
             // train net x now that new state is known
-            netX.train(resultX.oldState, resultO.newState, resultX.endedStatus != null, resultX.action, localBoardX.getValidActions(), resultX.reward);
+            netX.train(resultX.oldState, resultO.newState, false, resultX.action, localBoardX.getValidActions(), resultX.reward);
         }
     }
 
