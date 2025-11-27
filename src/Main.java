@@ -16,7 +16,7 @@ class Main {
     static final int INPUT_SIZE = 18;
     static final int OUTPUT_SIZE = ACTIONS;
     static final int[] LAYER_SIZES = {INPUT_SIZE, 100, OUTPUT_SIZE};
-    static final String HIDDEN_ACTIVATIONS = "relu";
+    static final String HIDDEN_ACTIVATIONS = "sigm";
     static final String OUTPUT_ACTIVATION = "none";
     static final double ALPHA = 0.09;
     static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
