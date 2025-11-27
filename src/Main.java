@@ -28,7 +28,7 @@ class Main {
     static int o_wins = 0;
     static int ties = 0;
 
-    public static void main(String[] args) {
+    static void main() {
         System.out.println("Episode " + 0);
 
         for (int ep = 1; ep <= EPISODES; ep++) {
