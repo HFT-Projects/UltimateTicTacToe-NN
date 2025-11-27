@@ -6,15 +6,22 @@ import uttt.Board.PLAYER;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class LocalBoard extends Board<PLAYER> {
     static class CellAlreadySetException extends RuntimeException {
     }
 
-    protected LocalBoard() {
+    public final int idxR;
+    public final int idxC;
+
+    protected LocalBoard(int idxR, int idxC) {
+        this.idxR = idxR;
+        this.idxC = idxC;
         super(PLAYER.class);
+    }
+
+    public int getIdx() {
+        return idxR * 3 + idxC;
     }
 
     public void setCell(int idxr, int idxc, PLAYER player) {
@@ -40,7 +47,7 @@ public class LocalBoard extends Board<PLAYER> {
         return false;
     }
 
-    public boolean[] getState() {
+    protected boolean[] getState() {
         // get board state encoded as boolean[] for NN input
         // 2 bits per cell: 00 = empty, 01 = O, 10 = X
         boolean[] ret = new boolean[18];
@@ -68,14 +75,6 @@ public class LocalBoard extends Board<PLAYER> {
             }
         }
         return ret;
-    }
-
-    public double[] getStateDouble() {
-        // convert boolean[] to double[]
-        boolean[] state = getState();
-        Stream<Boolean> stateStream = IntStream.range(0, state.length)
-                .mapToObj(idx -> state[idx]);
-        return stateStream.mapToDouble(b -> b ? 1d : 0d).toArray();
     }
 
     public int[] getValidActions() {

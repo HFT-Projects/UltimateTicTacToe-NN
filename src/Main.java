@@ -9,13 +9,16 @@ import uttt.LocalBoard;
 
 class Main {
     static final int ACTIONS = 9;
-    static final int EPISODES = 10000;
+    static final int EPISODES = 1000;
     static final double GAMMA = 0.9;
     static final double EPSILON = 0.2;
 
-    static final int INPUT_SIZE = 18;
+    // repeating board selection inside the input to increase weight of this part
+    static final int STATE_BOARD_SELECTION_MULTIPLIER = 3;
+
+    static final int INPUT_SIZE = 18 * 9 + 9 * STATE_BOARD_SELECTION_MULTIPLIER;
     static final int OUTPUT_SIZE = ACTIONS;
-    static final int[] LAYER_SIZES = {INPUT_SIZE, 100, OUTPUT_SIZE};
+    static final int[] LAYER_SIZES = {INPUT_SIZE, 512, OUTPUT_SIZE};
     static final String HIDDEN_ACTIVATIONS = "sigm";
     static final String OUTPUT_ACTIVATION = "none"; // SHOULD NOT BE CHANGED
     static final double ALPHA = 0.09;
@@ -65,10 +68,15 @@ class Main {
 
                 System.out.println(boardToString(globalBoard));
                 System.out.println("WON: " + resultX.endedStatus);
-                switch (resultX.endedStatus){
-                    case O: o_wins++;break;
-                    case X: x_wins++;break;
-                    default: ties++;
+                switch (resultX.endedStatus) {
+                    case O:
+                        o_wins++;
+                        break;
+                    case X:
+                        x_wins++;
+                        break;
+                    default:
+                        ties++;
                 }
                 break;
             }
@@ -91,10 +99,15 @@ class Main {
                 netX.train(resultX.oldState, resultO.newState, true, resultX.action, null, resultX.reward);
                 System.out.println(boardToString(globalBoard));
                 System.out.println("WON: " + resultO.endedStatus);
-                switch (resultO.endedStatus){
-                    case O: o_wins++;break;
-                    case X: x_wins++;break;
-                    default: ties++;
+                switch (resultO.endedStatus) {
+                    case O:
+                        o_wins++;
+                        break;
+                    case X:
+                        x_wins++;
+                        break;
+                    default:
+                        ties++;
                 }
                 break;
             }
@@ -115,11 +128,12 @@ class Main {
         }
     }
 
-    private record MoveResult(int action, int reward, ENDED_STATUS endedStatus, double[] oldState, double[] newState) {}
+    private record MoveResult(int action, int reward, ENDED_STATUS endedStatus, double[] oldState, double[] newState) {
+    }
 
     private static MoveResult move(LocalBoard localBoard, GlobalBoard globalBoard, UTTT_FFN net, PLAYER player, boolean print) {
         // encode state for NN
-        double[] state = localBoard.getStateDouble();
+        double[] state = getStateWithBoardSelection(globalBoard, localBoard);
 
         int localBoardIndex = 0;
         for (int i = 0; i < 9; i++) {
@@ -128,12 +142,12 @@ class Main {
         }
 
         // let the NN predict the best action
-        int action = net.move(localBoard);
+        int action = net.move(localBoard, state);
 
         if (print)
             System.out.println(boardToString(globalBoard, localBoardIndex, action));
 
-        double[] newState = localBoard.getStateDouble();
+        double[] newState = getStateWithBoardSelection(globalBoard, globalBoard.getCell(action));
 
         ENDED_STATUS endedStatus = globalBoard.ended();
 
@@ -146,6 +160,25 @@ class Main {
     // ---------------------------
     //        HELPER METHODS
     // ---------------------------
+    private static double[] getStateWithBoardSelection(GlobalBoard globalBoard, LocalBoard localBoard) {
+        double[] state = globalBoard.getStateDouble();
+        double[] extendedState = new double[state.length + 9 * STATE_BOARD_SELECTION_MULTIPLIER];
+
+        // copy original state into extendedState at the end
+        System.arraycopy(state, 0, extendedState, 9 * STATE_BOARD_SELECTION_MULTIPLIER, state.length);
+
+        double[] boardSelectionState = new double[9];
+        for (int i = 0; i < 9; i++) {
+            boardSelectionState[i] = (i == localBoard.getIdx()) ? 1.0 : 0.0;
+        }
+        // repeat board selection STATE_BOARD_SELECTION_MULTIPLIER times at the beginning
+        for (int i = 0; i < STATE_BOARD_SELECTION_MULTIPLIER; i++) {
+            System.arraycopy(boardSelectionState, 0, extendedState, i * 9, 9);
+        }
+
+        return extendedState;
+    }
+
     private static int calculateReward(ENDED_STATUS globalEnded, ENDED_STATUS localEnded, PLAYER player) {
         int reward = -1;
         if (Board.ENDED_STATUS_TO_PLAYER.get(globalEnded) == player)

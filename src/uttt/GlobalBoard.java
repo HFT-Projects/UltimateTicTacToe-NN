@@ -5,13 +5,15 @@ import org.jspecify.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class GlobalBoard extends Board<LocalBoard> {
     public GlobalBoard() {
         super(LocalBoard.class);
         for (int i = 0; i < 3; i++)
             for (int k = 0; k < 3; k++)
-                board[i][k] = new LocalBoard();
+                board[i][k] = new LocalBoard(i, k);
     }
 
     public LocalBoard getRemainingLocalBoard(LocalBoard board) {
@@ -30,6 +32,24 @@ public class GlobalBoard extends Board<LocalBoard> {
                 boards.add(board);
         }
         return boards.toArray(new LocalBoard[0]);
+    }
+
+    public boolean[] getState() {
+        // 9 local boards, each with 18 booleans
+        boolean[] state = new boolean[9 * 18];
+        for (int i = 0; i < 9; i++) {
+            boolean[] localState = getCell(i).getState();
+            System.arraycopy(localState, 0, state, i * 18, 18);
+        }
+        return state;
+    }
+
+    public double[] getStateDouble() {
+        // convert boolean[] to double[]
+        boolean[] state = getState();
+        Stream<Boolean> stateStream = IntStream.range(0, state.length)
+                .mapToObj(idx -> state[idx]);
+        return stateStream.mapToDouble(b -> b ? 1d : 0d).toArray();
     }
 
     @Override

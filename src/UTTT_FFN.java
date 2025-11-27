@@ -11,9 +11,7 @@ public class UTTT_FFN {
         this.player = player;
     }
 
-    public int move(@NonNull LocalBoard localBoard) {
-        double[] state = localBoard.getStateDouble();
-
+    public int move(@NonNull LocalBoard localBoard, double[] state) {
         int action = chooseAction(localBoard, state);
 
         localBoard.setCell(action, player);
