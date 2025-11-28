@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class LocalBoard extends Board<PLAYER> {
-    static class CellAlreadySetException extends RuntimeException {
+    public static class CellAlreadySetException extends RuntimeException {
     }
 
     public final int idxR;
     public final int idxC;
 
-    protected LocalBoard(int idxR, int idxC) {
+    public LocalBoard(int idxR, int idxC) {
         this.idxR = idxR;
         this.idxC = idxC;
         super(PLAYER.class);
@@ -35,7 +35,7 @@ public class LocalBoard extends Board<PLAYER> {
     }
 
     @Override
-    protected boolean won(int idx1r, int idx1c, int idx2r, int idx2c, int idx3r, int idx3c, @NonNull AtomicReference<PLAYER> wonRef) {
+    public boolean won(int idx1r, int idx1c, int idx2r, int idx2c, int idx3r, int idx3c, @NonNull AtomicReference<PLAYER> wonRef) {
         PLAYER b1w = getCell(idx1r, idx1c);
         PLAYER b2w = getCell(idx2r, idx2c);
         PLAYER b3w = getCell(idx3r, idx3c);
@@ -47,7 +47,7 @@ public class LocalBoard extends Board<PLAYER> {
         return false;
     }
 
-    protected boolean[] getState() {
+    public boolean[] getState() {
         // get board state encoded as boolean[] for NN input
         // 2 bits per cell: 00 = empty, 01 = O, 10 = X
         boolean[] ret = new boolean[18];
@@ -90,7 +90,7 @@ public class LocalBoard extends Board<PLAYER> {
     }
 
     @Override
-    protected boolean tied() {
+    public boolean tied() {
         // todo: better tie detection
         // check if all cells are filled
         boolean tied = true;

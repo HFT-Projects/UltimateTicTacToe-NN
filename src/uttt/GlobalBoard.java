@@ -33,6 +33,9 @@ public class GlobalBoard extends Board<LocalBoard> {
         }
         return boards.toArray(new LocalBoard[0]);
     }
+    public LocalBoard[] getRemainingLocalBoardsList() {
+       return getRemainingLocalBoards();
+    }
 
     public boolean[] getState() {
         // 9 local boards, each with 18 booleans
@@ -53,7 +56,7 @@ public class GlobalBoard extends Board<LocalBoard> {
     }
 
     @Override
-    protected boolean won(int idx1r, int idx1c, int idx2r, int idx2c, int idx3r, int idx3c, @NonNull AtomicReference<PLAYER> wonRef) {
+    public boolean won(int idx1r, int idx1c, int idx2r, int idx2c, int idx3r, int idx3c, @NonNull AtomicReference<PLAYER> wonRef) {
         ENDED_STATUS b1e = getCell(idx1r, idx1c).ended();
         ENDED_STATUS b2e = getCell(idx2r, idx2c).ended();
         ENDED_STATUS b3e = getCell(idx3r, idx3c).ended();
@@ -70,7 +73,7 @@ public class GlobalBoard extends Board<LocalBoard> {
     }
 
     @Override
-    protected boolean tied() {
+    public boolean tied() {
         // todo: better tie detection
         // check if all local boards are ended
         boolean tied = true;
