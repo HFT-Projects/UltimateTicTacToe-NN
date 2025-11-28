@@ -1,5 +1,9 @@
 package nn;
 
+import nn.activation.ActivationFunction;
+import nn.loss.LossFunction;
+import nn.loss.MeanSquaredError;
+
 import java.util.Arrays;
 import java.util.Random;
 
@@ -27,10 +31,10 @@ public class FFN {
     private final double[][] z; // Nettoeingänge: z[l][i]
     private final double[][] delta;
 
-    private final String hiddenActivation;
-    private final String outputActivation;
+    private final ActivationFunction hiddenActivation;
+    private final ActivationFunction outputActivation;
 
-    public FFN(int[] layerSizes, String hiddenActivation, String outputActivation, int miniBatchSize) {
+    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, int miniBatchSize) {
         this.layerSizes = layerSizes;
         this.numLayers = layerSizes.length;
 
@@ -101,9 +105,9 @@ public class FFN {
                 }
                 z[l][j] = sum;
                 if (l < numLayers - 1)
-                    a[l][j] = NNMath.activate(z[l][j], hiddenActivation);
+                    a[l][j] = hiddenActivation.activate(z[l][j]);
                 else
-                    a[l][j] = NNMath.activate(z[l][j], outputActivation);
+                    a[l][j] = outputActivation.activate(z[l][j]);
             }
         }
         return a[numLayers - 1];
@@ -119,7 +123,7 @@ public class FFN {
 
         for (int j = 0; j < a[L].length; j++) {
             if (lossFunction instanceof MeanSquaredError) {
-                delta[L][j] = gradOut[j] * NNMath.activateDerivative(z[L][j], outputActivation);
+                delta[L][j] = gradOut[j] * outputActivation.activateDerivative(z[L][j]);
             } else {
                 System.out.println("keine update moeglich");
             }
@@ -133,7 +137,7 @@ public class FFN {
                 for (int k = 0; k < layerSizes[l + 1]; k++) {
                     sum += W[l + 1][k][j] * delta[l + 1][k];
                 }
-                delta[l][j] = sum * NNMath.activateDerivative(z[l][j], hiddenActivation);
+                delta[l][j] = sum * hiddenActivation.activateDerivative(z[l][j]);
             }
         }
     }

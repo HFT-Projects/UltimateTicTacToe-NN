@@ -1,5 +1,8 @@
-import nn.LossFunction;
-import nn.MeanSquaredError;
+import nn.activation.ActivationFunction;
+import nn.activation.IdentityFunction;
+import nn.activation.SigmoidFunction;
+import nn.loss.LossFunction;
+import nn.loss.MeanSquaredError;
 
 import uttt.Board.PLAYER;
 import uttt.Board.ENDED_STATUS;
@@ -19,8 +22,8 @@ class Main {
     static final int INPUT_SIZE = 18 * 9 + 9 * STATE_BOARD_SELECTION_MULTIPLIER;
     static final int OUTPUT_SIZE = ACTIONS;
     static final int[] LAYER_SIZES = {INPUT_SIZE, 512, OUTPUT_SIZE};
-    static final String HIDDEN_ACTIVATIONS = "sigm";
-    static final String OUTPUT_ACTIVATION = "none"; // SHOULD NOT BE CHANGED
+    static final ActivationFunction HIDDEN_ACTIVATIONS = new SigmoidFunction();
+    static final ActivationFunction OUTPUT_ACTIVATION = new IdentityFunction(); // SHOULD NOT BE CHANGED
     static final double ALPHA = 0.09;
     static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
 

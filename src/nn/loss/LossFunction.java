@@ -1,4 +1,4 @@
-package nn;
+package nn.loss;
 
 public interface LossFunction {
     // Fehlergradient "gradient()": Ableitung der Loss-Funktion nach der Knotenausgabe (dL/da)

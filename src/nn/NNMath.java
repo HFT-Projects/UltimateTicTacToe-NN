@@ -1,5 +1,7 @@
 package nn;
 
+import nn.activation.ActivationFunction;
+
 import java.util.Random;
 
 public class NNMath {
@@ -201,51 +203,12 @@ public class NNMath {
         return sum;
     }
 
-    // Aktivierungsfunktion auswählen
-    public static double activate(double x, String activation) {
-        switch (activation.toLowerCase()) {
-            case "sigm":
-                return 1.0 / (1.0 + Math.exp(-x));
-            case "relu":
-                return Math.max(0.0, x);
-            case "tanh":
-                return Math.tanh(x);
-            case "none":
-                return x;
-            default:
-                throw new IllegalArgumentException("Unknown activation: " + activation);
-        }
-    }
-
     public static int argmax(double[] z) {
         int best = 0;
         for (int i = 1; i < z.length; i++) {
             if (z[i] > z[best]) best = i;
         }
         return best;
-    }
-
-    public static double activateDerivative(double x, String activation) {
-        switch (activation.toLowerCase()) {
-            case "sigm":
-                double s = 1.0 / (1.0 + Math.exp(-x));
-                return s * (1.0 - s);
-            case "tanh":
-                double t = Math.tanh(x);
-                return 1.0 - t * t;
-            case "relu":
-                return x > 0 ? 1.0 : 0.0;
-            case "none":
-                return 1;
-            case "softmax":
-                // Hinweis: Für Softmax + CrossEntropy braucht man die Ableitung nicht elementweise
-                // Der Gradient wird direkt als (yPred - yTrue) berechnet
-                throw new UnsupportedOperationException(
-                        "Softmax derivative should not be used element-wise; use gradient from CrossEntropy loss instead."
-                );
-            default:
-                throw new IllegalArgumentException("Unknown activation: " + activation);
-        }
     }
 //    // Gradient CrossEntropy + Softmax (vereinfachte Form)
 //    public static double[] crossEntropyGradient(double[] logits, double[] target) {
@@ -297,15 +260,12 @@ public class NNMath {
     /**
      * Overload: Aktivierung auf Array anwenden
      */
-    public static double[] activate(double[] z, String activation) {
-        if (activation.equalsIgnoreCase("softmax")) {
-            return softmax(z);
-        } else {
-            double[] result = new double[z.length];
-            for (int i = 0; i < z.length; i++) {
-                result[i] = activate(z[i], activation);
-            }
-            return result;
+    public static double[] activate(double[] z, ActivationFunction activation) {
+        // this does not work for softmax!
+        double[] result = new double[z.length];
+        for (int i = 0; i < z.length; i++) {
+            result[i] = activation.activate(z[i]);
         }
+        return result;
     }
 }

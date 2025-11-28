@@ -1,4 +1,4 @@
-package nn;
+package nn.loss;
 
 public class MeanSquaredError implements LossFunction {
 
