@@ -1,15 +1,8 @@
 import nn.FFN;
-import org.jspecify.annotations.NonNull;
-import uttt.Board.PLAYER;
 import uttt.LocalBoard;
 
 public class UTTT_FFN {
     private final FFN net = new FFN(Main.LAYER_SIZES, Main.HIDDEN_ACTIVATIONS, Main.OUTPUT_ACTIVATION, 100);
-    private final PLAYER player;
-
-    public UTTT_FFN(PLAYER player) {
-        this.player = player;
-    }
 
     // ---------------------------
     //     CHOOSE ACTION

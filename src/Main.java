@@ -27,8 +27,8 @@ class Main {
     static final double ALPHA = 0.09;
     static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
 
-    static UTTT_FFN netX = new UTTT_FFN(PLAYER.X);
-    static UTTT_FFN netO = new UTTT_FFN(PLAYER.O);
+    static UTTT_FFN netX = new UTTT_FFN();
+    static UTTT_FFN netO = new UTTT_FFN();
 
     static int x_wins = 0;
     static int o_wins = 0;
