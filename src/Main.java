@@ -145,7 +145,8 @@ class Main {
         }
 
         // let the NN predict the best action
-        int action = net.move(localBoard, state);
+        int action = net.chooseAction(localBoard, state);
+        localBoard.setCell(action, player);
 
         if (print)
             System.out.println(boardToString(globalBoard, localBoardIndex, action));

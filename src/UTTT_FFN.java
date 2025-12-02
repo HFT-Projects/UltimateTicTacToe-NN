@@ -11,18 +11,10 @@ public class UTTT_FFN {
         this.player = player;
     }
 
-    public int move(@NonNull LocalBoard localBoard, double[] state) {
-        int action = chooseAction(localBoard, state);
-
-        localBoard.setCell(action, player);
-
-        return action;
-    }
-
     // ---------------------------
     //     CHOOSE ACTION
     // ---------------------------
-    private int chooseAction(LocalBoard board, double[] state) {
+    public int chooseAction(LocalBoard board, double[] state) {
         // get all available actions for this move
         int[] actions = board.getValidActions();
 
