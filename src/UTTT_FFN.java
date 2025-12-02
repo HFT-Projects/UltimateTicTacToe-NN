@@ -1,4 +1,5 @@
 import nn.FFN;
+import uttt.GlobalBoard;
 import uttt.LocalBoard;
 
 public class UTTT_FFN {
@@ -29,6 +30,32 @@ public class UTTT_FFN {
                 }
             }
         return bestA;
+    }
+
+    // ---------------------------
+    //     CHOOSE BOARD
+    // ---------------------------
+    public LocalBoard chooseBoard(GlobalBoard globalBoard, double[] state) {
+        LocalBoard[] boards = globalBoard.getRemainingLocalBoards();
+
+        // choose random action sometimes
+        if (Math.random() < Main.EPSILON)
+            return boards[(int) (Math.random() * boards.length)];
+
+        double[] q = net.predictQ(state);
+
+        LocalBoard bestB = boards[0];
+        double bestQ = q[bestB.getIdx()];
+        // select action with bestQ but ONLY out of available actions for this move
+        if (boards.length > 1)
+            for (int i = 1; i < boards.length; i++) {
+                LocalBoard a = boards[i];
+                if (q[a.getIdx()] > bestQ) {
+                    bestQ = q[a.getIdx()];
+                    bestB = a;
+                }
+            }
+        return bestB;
     }
 
     // ---------------------------

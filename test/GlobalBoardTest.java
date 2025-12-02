@@ -31,12 +31,12 @@ public class GlobalBoardTest {
     }
 
     @Test
-    public void TestGetRemainingLocalBoards() {
-        assertEquals(globalBoard.getRemainingLocalBoard(globalBoard.getCell(8)), globalBoard.getCell(8));
+    public void TestChooseSameBoard() {
+        assertEquals(Main.chooseBoard(globalBoard, globalBoard.getCell(8), null), globalBoard.getCell(8));
     }
     @Test
-    public void TestGetNotSameBoard() {
-        assertNotSame(globalBoard.getRemainingLocalBoard(globalBoard.getCell(2)), globalBoard.getCell(2));
+    public void TestChooseNotSameBoard() {
+        assertThrows(NullPointerException.class, () -> Main.chooseBoard(globalBoard, globalBoard.getCell(2), null));
     }
     @Test
     public void TestWonSimple() {

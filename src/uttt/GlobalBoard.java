@@ -16,14 +16,6 @@ public class GlobalBoard extends Board<LocalBoard> {
                 board[i][k] = new LocalBoard(i, k);
     }
 
-    public LocalBoard getRemainingLocalBoard(LocalBoard board) {
-        if (board.ended() != null) {
-            LocalBoard[] remainingBoards = getRemainingLocalBoards();
-            board = remainingBoards[(int) (Math.random() * remainingBoards.length)];
-        }
-        return board;
-    }
-
     public LocalBoard[] getRemainingLocalBoards() {
         List<LocalBoard> boards = new ArrayList<>();
         for (int i = 0; i < 9; i++) {

@@ -4,6 +4,7 @@ import nn.activation.SigmoidFunction;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
 
+import org.jspecify.annotations.NonNull;
 import uttt.Board.PLAYER;
 import uttt.Board.ENDED_STATUS;
 import uttt.Board;
@@ -53,7 +54,7 @@ class Main {
         GlobalBoard globalBoard = new GlobalBoard();
 
         // local (inner) board which is next played by player X
-        LocalBoard localBoardX = globalBoard.getCell((int) (Math.random() * 9));
+        LocalBoard localBoardX = chooseBoard(globalBoard, null, netX);
         LocalBoard localBoardO;
         MoveResult resultX;
         MoveResult resultO = null;
@@ -86,7 +87,7 @@ class Main {
 
             // select which local board they players have to play next
             // based on the last action of player O if that board is still available
-            localBoardO = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultX.action));
+            localBoardO = chooseBoard(globalBoard, globalBoard.getCell(resultX.action), netO);
             // train net x now that new state is known
             if (resultO != null)
                 netO.train(resultO.oldState, resultX.newState, false, resultO.action, localBoardO.getValidActions(), resultO.reward);
@@ -117,7 +118,7 @@ class Main {
 
             // select which local board they players have to play next
             // based on the last action of player O if that board is still available
-            localBoardX = globalBoard.getRemainingLocalBoard(globalBoard.getCell(resultO.action));
+            localBoardX = chooseBoard(globalBoard, globalBoard.getCell(resultO.action), netX);
             // train net x now that new state is known
             netX.train(resultX.oldState, resultO.newState, false, resultX.action, localBoardX.getValidActions(), resultX.reward);
         }
@@ -129,6 +130,16 @@ class Main {
             System.out.println("O Wins: " + o_wins);
             System.out.println("Ties: " + ties);
         }
+    }
+
+    public static @NonNull LocalBoard chooseBoard(GlobalBoard globalBoard, LocalBoard desiredBoard, UTTT_FFN net) {
+        if (desiredBoard != null && desiredBoard.ended() != null)
+            desiredBoard = null;
+        if (desiredBoard == null) {
+            double[] state = getStateWithBoardSelection(globalBoard, null);
+            desiredBoard = net.chooseBoard(globalBoard, state);
+        }
+        return desiredBoard;
     }
 
     private record MoveResult(int action, int reward, ENDED_STATUS endedStatus, double[] oldState, double[] newState) {
@@ -168,8 +179,9 @@ class Main {
         System.arraycopy(state, 0, extendedState, 9 * STATE_BOARD_SELECTION_MULTIPLIER, state.length);
 
         double[] boardSelectionState = new double[9];
+        int idx = (localBoard == null) ? -1 : localBoard.getIdx();
         for (int i = 0; i < 9; i++) {
-            boardSelectionState[i] = (i == localBoard.getIdx()) ? 1.0 : 0.0;
+            boardSelectionState[i] = (i == idx) ? 1.0 : 0.0;
         }
         // repeat board selection STATE_BOARD_SELECTION_MULTIPLIER times at the beginning
         for (int i = 0; i < STATE_BOARD_SELECTION_MULTIPLIER; i++) {
