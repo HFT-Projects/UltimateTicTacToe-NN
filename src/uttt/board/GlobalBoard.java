@@ -6,42 +6,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import uttt.actor.PLAYER;
+import helper.Utils;
+
 public class GlobalBoard extends Board<LocalBoard> {
     public GlobalBoard() {
         super(LocalBoard.class);
         for (int i = 0; i < 3; i++)
             for (int k = 0; k < 3; k++)
-                board[i][k] = new LocalBoard(i, k);
+                board[i][k] = new LocalBoard(new Selection(i, k));
     }
 
-    public LocalBoard[] getRemainingLocalBoards() {
-        List<LocalBoard> boards = new ArrayList<>();
-        for (int i = 0; i < 9; i++) {
-            LocalBoard board = getCell(i);
-            if (board.ended() == null)
-                boards.add(board);
-        }
-        return boards.toArray(new LocalBoard[0]);
-    }
-
-    public CELL_STATE[][] getState(PLAYER player) {
-        CELL_STATE[][] state = new CELL_STATE[9][];
-        for (int i = 0; i < 9; i++) {
-            CELL_STATE[] localState = getCell(i).getState(player);
-            state[i] = localState;
+    public PLAYER[][] getState() {
+        PLAYER[][] state = new PLAYER[9][];
+        for (int i = 0; i < 3; i++) {
+            for (int k = 0; k < 3; k++) {
+                PLAYER[] localState = getCell(new Selection(i, k)).getState();
+                state[3*i+k] = localState;
+            }
         }
         return state;
     }
 
     @Override
-    public boolean won(int idx1r, int idx1c, int idx2r, int idx2c, int idx3r, int idx3c, @NonNull AtomicReference<PLAYER> wonRef) {
-        ENDED_STATUS b1e = getCell(idx1r, idx1c).ended();
-        ENDED_STATUS b2e = getCell(idx2r, idx2c).ended();
-        ENDED_STATUS b3e = getCell(idx3r, idx3c).ended();
+   boolean won(Selection cell1, Selection cell2, Selection cell3, @NonNull AtomicReference<PLAYER> wonRef) {
+        ENDED_STATUS b1e = getCell(cell1).ended();
+        ENDED_STATUS b2e = getCell(cell2).ended();
+        ENDED_STATUS b3e = getCell(cell3).ended();
 
-        PLAYER b1w = ENDED_STATUS_TO_PLAYER.get(b1e);
-        PLAYER b2w = ENDED_STATUS_TO_PLAYER.get(b2e);
-        PLAYER b3w = ENDED_STATUS_TO_PLAYER.get(b3e);
+        PLAYER b1w = Utils.ENDED_STATUS_TO_PLAYER.get(b1e);
+        PLAYER b2w = Utils.ENDED_STATUS_TO_PLAYER.get(b2e);
+        PLAYER b3w = Utils.ENDED_STATUS_TO_PLAYER.get(b3e);
 
         if (b1w != null && b1w == b2w && b1w == b3w) {
             wonRef.set(b1w);
@@ -51,17 +46,30 @@ public class GlobalBoard extends Board<LocalBoard> {
     }
 
     @Override
-    public boolean tied() {
-        // todo: better tie detection
+    boolean tied() {
         // check if all local boards are ended
         boolean tied = true;
-        for (int i = 0; i < 9; i++) {
-            LocalBoard board = getCell(i);
-            if (board.ended() == null) {
-                tied = false;
-                break;
+        for (int i = 0; i < 3; i++) {
+            for (int k = 0; k < 3; k++) {
+                LocalBoard board = getCell(new Selection(i, k));
+                if (board.ended() == null) {
+                    tied = false;
+                    break;
+                }
             }
         }
         return tied;
+    }
+
+    public Selection[] getPlayableLocalBoards() {
+        List<LocalBoard> boards = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            for (int k = 0; k < 3; k++) {
+                LocalBoard board = getCell(new Selection(i, k));
+                if (board.ended() == null)
+                    boards.add(board);
+            }
+        }
+        return boards.stream().map(LocalBoard::getSelection).toArray(Selection[]::new);
     }
 }

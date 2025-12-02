@@ -17,9 +17,9 @@ public class FFN {
     }
 
     private int miniBatchCounter = 0;
-    private int miniBatchSize;   // wird beim Konstruktor gesetzt
-    private double[][][] gradW;  // W-Gradienten summiert
-    private double[][] gradB;    // Bias-Gradienten summiert
+    private final int miniBatchSize;   // wird beim Konstruktor gesetzt
+    private final double[][][] gradW;  // W-Gradienten summiert
+    private final double[][] gradB;    // Bias-Gradienten summiert
 
 
     private final int numLayers;
@@ -80,7 +80,7 @@ public class FFN {
             int nOut = layerSizes[l];
             for (int j = 0; j < nOut; j++) {
                 b[l][j] = (rand.nextDouble() - 0.5);
-                ;                          //neu: 0.0
+                //neu: 0.0
                 for (int i = 0; i < nIn; i++) {
                     W[l][j][i] = (rand.nextDouble() - 0.5);                        //neu: (rand.nextDouble() - 0.5) * 0.1;
 //					W[l][j][i] = -1 + 2 * rand.nextDouble();
@@ -88,7 +88,7 @@ public class FFN {
                 }
             }
         }
-        System.out.println("Gewichte zufaellig initialisiert");
+        // System.out.println("Gewichte zufaellig initialisiert");
     }
 
     // ============================================================
@@ -180,9 +180,7 @@ public class FFN {
 
         forward(state);
 
-        for (int i = 0; i < Q.length; i++) {
-            Q[i] = a[outputLayer][i];
-        }
+        System.arraycopy(a[outputLayer], 0, Q, 0, Q.length);
         return Q;
     }
 
