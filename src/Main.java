@@ -138,11 +138,7 @@ class Main {
         // encode state for NN
         double[] state = getStateWithBoardSelection(globalBoard, localBoard);
 
-        int localBoardIndex = 0;
-        for (int i = 0; i < 9; i++) {
-            if (globalBoard.getCell(i) == localBoard)
-                localBoardIndex = i;
-        }
+        int localBoardIndex = localBoard.getIdx();
 
         // let the NN predict the best action
         int action = net.chooseAction(localBoard, state);
