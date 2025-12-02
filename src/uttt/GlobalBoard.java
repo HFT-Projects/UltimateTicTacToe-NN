@@ -24,7 +24,7 @@ public class GlobalBoard extends Board<LocalBoard> {
         return board;
     }
 
-    private LocalBoard[] getRemainingLocalBoards() {
+    public LocalBoard[] getRemainingLocalBoards() {
         List<LocalBoard> boards = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
             LocalBoard board = getCell(i);
@@ -32,9 +32,6 @@ public class GlobalBoard extends Board<LocalBoard> {
                 boards.add(board);
         }
         return boards.toArray(new LocalBoard[0]);
-    }
-    public LocalBoard[] getRemainingLocalBoardsList() {
-       return getRemainingLocalBoards();
     }
 
     public boolean[] getState() {

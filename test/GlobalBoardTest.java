@@ -27,7 +27,7 @@ public class GlobalBoardTest {
     }
     @Test
     public void TestGetRemainingLocalBoardsLength() {
-        assertEquals(4, globalBoard.getRemainingLocalBoardsList().length);
+        assertEquals(4, globalBoard.getRemainingLocalBoards().length);
     }
 
     @Test
