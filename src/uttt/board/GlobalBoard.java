@@ -1,4 +1,4 @@
-package uttt;
+package uttt.board;
 
 import org.jspecify.annotations.NonNull;
 

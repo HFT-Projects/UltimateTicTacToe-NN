@@ -1,6 +1,6 @@
 import nn.FFN;
-import uttt.GlobalBoard;
-import uttt.LocalBoard;
+import uttt.board.GlobalBoard;
+import uttt.board.LocalBoard;
 
 public class UTTT_FFN {
     private final FFN net = new FFN(Main.LAYER_SIZES, Main.HIDDEN_ACTIVATIONS, Main.OUTPUT_ACTIVATION, 100);

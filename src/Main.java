@@ -5,11 +5,11 @@ import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
 
 import org.jspecify.annotations.NonNull;
-import uttt.Board.PLAYER;
-import uttt.Board.ENDED_STATUS;
-import uttt.Board;
-import uttt.GlobalBoard;
-import uttt.LocalBoard;
+import uttt.board.Board.PLAYER;
+import uttt.board.Board.ENDED_STATUS;
+import uttt.board.Board;
+import uttt.board.GlobalBoard;
+import uttt.board.LocalBoard;
 
 class Main {
     static final int ACTIONS = 9;

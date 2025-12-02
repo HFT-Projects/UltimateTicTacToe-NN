@@ -1,7 +1,7 @@
-package uttt;
+package uttt.board;
 
 import org.jspecify.annotations.NonNull;
-import uttt.Board.PLAYER;
+import uttt.board.Board.PLAYER;
 
 import java.util.ArrayList;
 import java.util.List;

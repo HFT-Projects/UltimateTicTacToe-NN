@@ -1,8 +1,8 @@
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uttt.Board;
-import uttt.GlobalBoard;
+import uttt.board.Board;
+import uttt.board.GlobalBoard;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -16,9 +16,9 @@ public class GlobalBoardTest {
         globalBoard = new GlobalBoard();
 
         for (int i = 0; i < 5; i++) {
-            globalBoard.getCell(i).setCell(0, uttt.Board.PLAYER.X);
-            globalBoard.getCell(i).setCell(1, uttt.Board.PLAYER.X);
-            globalBoard.getCell(i).setCell(2, uttt.Board.PLAYER.X);
+            globalBoard.getCell(i).setCell(0, Board.PLAYER.X);
+            globalBoard.getCell(i).setCell(1, Board.PLAYER.X);
+            globalBoard.getCell(i).setCell(2, Board.PLAYER.X);
         }
     }
     @AfterEach
