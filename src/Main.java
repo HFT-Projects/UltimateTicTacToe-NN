@@ -8,6 +8,7 @@ import org.jspecify.annotations.NonNull;
 import uttt.board.Board.PLAYER;
 import uttt.board.Board.ENDED_STATUS;
 import uttt.board.Board;
+import uttt.board.Board.CELL_STATE;
 import uttt.board.GlobalBoard;
 import uttt.board.LocalBoard;
 
@@ -54,7 +55,7 @@ class Main {
         GlobalBoard globalBoard = new GlobalBoard();
 
         // local (inner) board which is next played by player X
-        LocalBoard localBoardX = chooseBoard(globalBoard, null, netX);
+        LocalBoard localBoardX = chooseBoard(globalBoard, null, PLAYER.X, netX);
         LocalBoard localBoardO;
         MoveResult resultX;
         MoveResult resultO = null;
@@ -87,7 +88,7 @@ class Main {
 
             // select which local board they players have to play next
             // based on the last action of player O if that board is still available
-            localBoardO = chooseBoard(globalBoard, globalBoard.getCell(resultX.action), netO);
+            localBoardO = chooseBoard(globalBoard, globalBoard.getCell(resultX.action), PLAYER.O, netO);
             // train net x now that new state is known
             if (resultO != null)
                 netO.train(resultO.oldState, resultX.newState, false, resultO.action, localBoardO.getValidActions(), resultO.reward);
@@ -118,7 +119,7 @@ class Main {
 
             // select which local board they players have to play next
             // based on the last action of player O if that board is still available
-            localBoardX = chooseBoard(globalBoard, globalBoard.getCell(resultO.action), netX);
+            localBoardX = chooseBoard(globalBoard, globalBoard.getCell(resultO.action), PLAYER.X, netX);
             // train net x now that new state is known
             netX.train(resultX.oldState, resultO.newState, false, resultX.action, localBoardX.getValidActions(), resultX.reward);
         }
@@ -132,11 +133,11 @@ class Main {
         }
     }
 
-    public static @NonNull LocalBoard chooseBoard(GlobalBoard globalBoard, LocalBoard desiredBoard, UTTT_FFN net) {
+    public static @NonNull LocalBoard chooseBoard(GlobalBoard globalBoard, LocalBoard desiredBoard, PLAYER player, UTTT_FFN net) {
         if (desiredBoard != null && desiredBoard.ended() != null)
             desiredBoard = null;
         if (desiredBoard == null) {
-            double[] state = getStateWithBoardSelection(globalBoard, null);
+            double[] state = getStateWithBoardSelection(globalBoard, null, player);
             desiredBoard = net.chooseBoard(globalBoard, state);
         }
         return desiredBoard;
@@ -147,7 +148,7 @@ class Main {
 
     private static MoveResult move(LocalBoard localBoard, GlobalBoard globalBoard, UTTT_FFN net, PLAYER player, boolean print) {
         // encode state for NN
-        double[] state = getStateWithBoardSelection(globalBoard, localBoard);
+        double[] state = getStateWithBoardSelection(globalBoard, localBoard, player);
 
         int localBoardIndex = localBoard.getIdx();
 
@@ -158,7 +159,7 @@ class Main {
         if (print)
             System.out.println(boardToString(globalBoard, localBoardIndex, action));
 
-        double[] newState = getStateWithBoardSelection(globalBoard, globalBoard.getCell(action));
+        double[] newState = getStateWithBoardSelection(globalBoard, globalBoard.getCell(action), player);
 
         ENDED_STATUS endedStatus = globalBoard.ended();
 
@@ -171,8 +172,30 @@ class Main {
     // ---------------------------
     //        HELPER METHODS
     // ---------------------------
-    private static double[] getStateWithBoardSelection(GlobalBoard globalBoard, LocalBoard localBoard) {
-        double[] state = globalBoard.getStateDouble();
+    private static double[] getStateDouble(GlobalBoard globalBoard, PLAYER player) {
+        CELL_STATE[][] state = globalBoard.getState(player);
+        double[] stateDouble = new double[9 * 9 * 2];
+        for (int i = 0; i < 9; i++) {
+            for (int k = 0; k < 9; k++) {
+                int idx1 = i * 9 + 2 * k;
+                int idx2 = idx1 + 1;
+                if (state[i][k] == CELL_STATE.YOU) {
+                    stateDouble[idx1] = 1;
+                    stateDouble[idx2] = 0;
+                } else if (state[i][k] == CELL_STATE.ENEMY) {
+                    stateDouble[idx1] = 0;
+                    stateDouble[idx2] = 1;
+                } else {
+                    stateDouble[idx1] = 0;
+                    stateDouble[idx2] = 0;
+                }
+            }
+        }
+        return stateDouble;
+    }
+
+    private static double[] getStateWithBoardSelection(GlobalBoard globalBoard, LocalBoard localBoard, PLAYER player) {
+        double[] state = getStateDouble(globalBoard, player);
         double[] extendedState = new double[state.length + 9 * STATE_BOARD_SELECTION_MULTIPLIER];
 
         // copy original state into extendedState at the end

@@ -20,6 +20,12 @@ public abstract class Board<T> {
         TIE
     }
 
+    public enum CELL_STATE {
+        YOU,
+        ENEMY,
+        NOT_SET
+    }
+
     public static final Map<ENDED_STATUS, PLAYER> ENDED_STATUS_TO_PLAYER;
     public static final Map<PLAYER, ENDED_STATUS> PLAYER_TO_ENDED_STATUS;
 

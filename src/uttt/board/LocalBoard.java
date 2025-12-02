@@ -47,31 +47,19 @@ public class LocalBoard extends Board<PLAYER> {
         return false;
     }
 
-    public boolean[] getState() {
+    public CELL_STATE[] getState(PLAYER player) {
         // get board state encoded as boolean[] for NN input
         // 2 bits per cell: 00 = empty, 01 = O, 10 = X
-        boolean[] ret = new boolean[18];
-        for (int i = 0; i < 3; i++) {
-            for (int k = 0; k < 3; k++) {
-                PLAYER cell = getCell(i, k);
+        CELL_STATE[] ret = new CELL_STATE[9];
+        for (int i = 0; i < 9; i++) {
+            PLAYER cell = getCell(i);
 
-                // linear_index is from 0 to 8 (in 3x3 board)
-                int linear_index = 3 * i + k;
-                // index in boolean[] for cell (i,k)
-                // each cell uses 2 bits
-                int idx1 = 2 * linear_index;
-                int idx2 = idx1 + 1;
-
-                if (cell == PLAYER.X) {
-                    ret[idx1] = true;
-                    ret[idx2] = false;
-                } else if (cell == PLAYER.O) {
-                    ret[idx1] = false;
-                    ret[idx2] = true;
-                } else {
-                    ret[idx1] = false;
-                    ret[idx2] = false;
-                }
+            if (cell == player) {
+                ret[i] = CELL_STATE.YOU;
+            } else if (cell != null) {
+                ret[i] = CELL_STATE.ENEMY;
+            } else {
+                ret[i] = CELL_STATE.NOT_SET;
             }
         }
         return ret;
