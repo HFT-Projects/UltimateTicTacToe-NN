@@ -1,0 +1,158 @@
+@startuml
+namespace uttt {
+  class Game {
+  }
+
+  namespace actor {
+    abstract class Actor {
+      - player : PLAYER {read-only}
+
+      + Actor(player: PLAYER)
+      + getPlayer(): PLAYER
+      + {abstract} move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
+      + {abstract} chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
+    }
+
+    class NNActor extends Actor {
+      - net: FFN {read-only}
+      - lastAction: Selection
+      - oldState: double[]
+      - oldLocalEndedStatus: ENDED_STATUS
+
+      + NNActor(player: PLAYER)
+      + move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
+      + chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
+      - predict(state: double[], objects: Selection[]): Selection
+      - train(state: double[], newState: double[], globalEndedStatus: ENDED_STATUS, action: Selection, playableActions: Selection[])
+      - eventHandler(event: Observer.Event)
+      - convertPlayerStateToCellState(state: PLAYER[][]): CELL_STATE[][]
+      - convertCellStateToDoubleState(state: CELL_STATE[][]): double[]
+      - getStateWithBoardSelection(state: CELL_STATE[][], localBoardSel: Selection): double[]
+      - calculateReward(globalEndedStatus: ENDED_STATUS, localEndedStatus: ENDED_STATUS): int
+    }
+
+    enum PLAYER {
+      X
+      O
+    }
+    hide PLAYER methods
+
+    enum NNActor::CELL_STATE {
+      YOU,
+      ENEMY,
+      NOT_SET
+    }
+    hide "NNActor::CELL_STATE" methods
+  }
+
+  namespace board {
+    abstract class Board <T> {
+        # board: T[3][3] {read-only}
+
+        + Board(cls: Class<T>)
+        + getCell(sel: Selection): T
+        ~ {abstract} won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
+        ~ {abstract} tied(): boolean
+        + ended(): ENDED_STATUS
+    }
+
+    class GlobalBoard extends Board {
+      + GlobalBoard()
+      + getState(): PLAYER[][]
+      ~ won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
+      ~ tied(): boolean
+      + getPlayableLocalBoards(): Selection[]
+    }
+
+    class LocalBoard extends Board {
+        - board: PLAYER[3][3] {read-only}
+        - selection: Selection {read-only}
+
+        + LocalBoard(sel: Selection)
+        + getSelection(): Selection
+        + setCell(sel: Selection, player: PLAYER)
+        + getState(): PLAYER[]
+        + getPlayableActions(): Selection[]
+        ~ won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
+        ~ tied(): boolean
+    }
+
+    GlobalBoard --> "9 board[3][3]" LocalBoard
+
+    exception CellAlreadySetException {
+    }
+    hide CellAlreadySetException members
+
+    record Selection {
+      idxRow: int
+      idxColumn: int
+    }
+    hide Selection methods
+
+    enum ENDED_STATUS {
+      X,
+      O,
+      TIE
+    }
+    hide ENDED_STATUS methods
+  }
+  actor.NNActor -> "1" observer.Observer
+
+  namespace observer {
+    record Event {
+      player: PLAYER
+      board: Selection
+      oldState: PLAYER[][]
+      newState: PLAYER[][]
+      globalEndedStatus: ENDED_STATUS
+      localEndedStatus: ENDED_STATUS
+    }
+    hide Event Methods
+
+    class Observer {
+      - callback: Consumer<Event> {read-only}
+
+      + Observer(callback: Consumer<Event>)
+      + notify(event: Event)
+    }
+  }
+
+  class Game {
+    + Game(actorX: Actor, actorO: Actor, observers: Observer[])
+    + Game(actorX: Actor, actorO: Actor)
+    + run()
+    - move(globalBoard: GlobalBoard, actor: Actor, desiredBoardIdx: Selection): Selection
+    + addObserver(observer: Observer)
+    + removeObserver(observer: Observer)
+    - notifyObservers(...)
+  }
+
+  Game --> "1" GlobalBoard
+  Game --> "1 actorX" Actor
+  Game --> "1 actorO" Actor
+  Game --> "*" Observer
+}
+
+namespace helper {
+    class Stats {
+      - o_wins: int = 0
+      - x_wins: int = 0
+      - ties: ties = 0
+
+      + Stats()
+      + logGameEnd(endedStatus: ENDED_STATUS)
+      + {static} logEpisodeFinished(ep: int)
+      + logAllEpisodesEnd(hiddenActivations: ActivationFunction)
+      + boardToString(board: GlobalBoard, globalCellIndex: int, localCellIndex: int): String
+      + boardToString(board: GlobalBoard): String
+    }
+
+    class Utils {
+      + {static} ENDED_STATUS_TO_PLAYER: Map<ENDED_STATUS, PLAYER> {read-only}
+      + {static} PLAYER_TO_ENDED_STATUS: Map<PLAYER, ENDED_STATUS> {read-only}
+
+      - Utils()
+      + {static} selectionToInt(sel: Selection): int
+    }
+}
+@enduml
