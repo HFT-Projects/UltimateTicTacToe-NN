@@ -38,6 +38,7 @@ public class NNActor extends Actor {
     private Selection lastAction = null;
     private double[] oldState = null;
     private ENDED_STATUS oldLocalEndedStatus = null;
+    private boolean eventHandlerRegistered = false;
 
     public NNActor(PLAYER player) {
         super(player);
@@ -49,7 +50,9 @@ public class NNActor extends Actor {
     @Override
     public Selection move(PLAYER[][] state, Selection localBoardSel, Selection[] playableActions) {
         double[] stateDouble = getStateWithBoardSelection(convertPlayerStateToCellState(state), localBoardSel);
-        if (lastAction != null && oldState != null)
+        if (lastAction == null ^ oldState == null)
+            throw new IllegalStateException("Inconsistent internal state: lastAction and oldState should both be null or both be non-null.");
+        if (lastAction != null)
             train(oldState, getStateWithBoardSelection(convertPlayerStateToCellState(state), localBoardSel), null, lastAction, playableActions);
         oldState = stateDouble;
         return lastAction = predict(stateDouble, playableActions);
@@ -94,6 +97,9 @@ public class NNActor extends Actor {
     //        NN-UPDATE
     // ---------------------------
     private void train(double[] state, double[] newState, ENDED_STATUS globalEndedStatus, Selection action, Selection[] playableActions) {
+        if (!eventHandlerRegistered)
+            throw new IllegalStateException("Event handler not registered! Make sure to register the event handler of the NNActor in the Game before starting the game.");
+
         int reward = calculateReward(globalEndedStatus, oldLocalEndedStatus);
 
         double[] q_s = net.predictQ(state);
@@ -120,6 +126,7 @@ public class NNActor extends Actor {
     // ---------------------------
     // handles training when game ends & updates oldLocalEndedStatus after each of our moves
     public void eventHandler(Event event) {
+        eventHandlerRegistered = true;
         if (event.globalEndedStatus() != null) {
             PLAYER[][] newState = event.newState();
             train(oldState, getStateWithBoardSelection(convertPlayerStateToCellState(newState), null), event.globalEndedStatus(), lastAction, null);
