@@ -9,7 +9,6 @@ import nn.loss.MeanSquaredError;
 
 import uttt.board.ENDED_STATUS;
 import uttt.board.Selection;
-import uttt.observer.Observer;
 import uttt.observer.Event;
 import helper.Utils;
 
@@ -36,7 +35,6 @@ public class NNActor extends Actor {
     private static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
 
     private final FFN net = new FFN(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, 100);
-    public final Observer observer = new Observer(this::eventHandler);
     private Selection lastAction = null;
     private double[] oldState = null;
     private ENDED_STATUS oldLocalEndedStatus = null;
@@ -121,7 +119,7 @@ public class NNActor extends Actor {
     //        EVENT HANDLER
     // ---------------------------
     // handles training when game ends & updates oldLocalEndedStatus after each of our moves
-    private void eventHandler(Event event) {
+    public void eventHandler(Event event) {
         if (event.globalEndedStatus() != null) {
             PLAYER[][] newState = event.newState();
             train(oldState, getStateWithBoardSelection(convertPlayerStateToCellState(newState), null), event.globalEndedStatus(), lastAction, null);

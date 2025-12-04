@@ -29,8 +29,8 @@ void main() {
 
 private static void runEpisode(Stats stats) {
     Game game = new Game(actorX, actorO);
-    game.addObserver(actorX.observer);
-    game.addObserver(actorO.observer);
+    game.addObserver(actorX::eventHandler);
+    game.addObserver(actorO::eventHandler);
     ENDED_STATUS end = game.run();
     stats.logGameEnd(end);
 }
