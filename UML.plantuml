@@ -15,16 +15,17 @@ namespace uttt {
 
     class NNActor extends Actor {
       - net: FFN {read-only}
-      - lastAction: Selection
-      - oldState: double[]
-      - oldLocalEndedStatus: ENDED_STATUS
+      - lastAction: Selection = null
+      - oldState: double[] = null
+      - oldLocalEndedStatus: ENDED_STATUS = null
+      - eventHandlerRegistered: boolean = false
 
       + NNActor(player: PLAYER)
       + move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
       + chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
       - predict(state: double[], objects: Selection[]): Selection
       - train(state: double[], newState: double[], globalEndedStatus: ENDED_STATUS, action: Selection, playableActions: Selection[])
-      - eventHandler(event: Observer.Event)
+      + eventHandler(event: Observer.Event)
       - convertPlayerStateToCellState(state: PLAYER[][]): CELL_STATE[][]
       - convertCellStateToDoubleState(state: CELL_STATE[][]): double[]
       - getStateWithBoardSelection(state: CELL_STATE[][], localBoardSel: Selection): double[]
@@ -96,7 +97,6 @@ namespace uttt {
     }
     hide ENDED_STATUS methods
   }
-  actor.NNActor -> "1" observer.Observer
 
   namespace observer {
     record Event {
@@ -109,11 +109,40 @@ namespace uttt {
     }
     hide Event Methods
 
-    class Observer {
-      - callback: Consumer<Event> {read-only}
-
-      + Observer(callback: Consumer<Event>)
+    interface Observer <<Functional>> {
       + notify(event: Event)
+    }
+    hide Observer attributes
+  }
+
+  namespace storage {
+    record Move {
+      player: PLAYER
+      board: Selection
+      action: Selection
+      localEndedStatus: ENDED_STATUS
+      globalEndedStatus: ENDED_STATUS
+    }
+    hide Move methods
+
+    class StorageManager() {
+      - StorageManager()
+      - {static} moveToMap(move: Move): Map<String, Object>
+      - {static} mapToMove(map: Map<String, Object>): Move
+      + {static} save(moves: Move[], filepath: String)
+      + {static} load(filepath: String): Move[]
+      - {static} <T> deeperClone(source: T[][]): T[][]
+      - {static} applyMove(state: PLAYER[][], move: Move)
+      + {static} movesToState(moves: Move[]): PLAYER[][]
+      + {static} movesToStates(moves: Move[]): PLAYER[][][]
+    }
+
+    class MoveHistoryGenerator {
+      - List<Move> history {read-only}
+
+      + MoveHistoryGenerator()
+      + getHistory(): Move[]
+      + handleEvent(event: Observer.Event)
     }
   }
 
