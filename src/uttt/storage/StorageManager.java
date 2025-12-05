@@ -10,7 +10,7 @@ import java.io.UncheckedIOException;
 import java.util.*;
 
 @SuppressWarnings("unused")
-public class StorageManager {
+public final class StorageManager {
     private StorageManager() {
     }
 
