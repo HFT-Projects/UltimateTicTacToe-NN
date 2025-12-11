@@ -16,11 +16,11 @@ public class FFN {
         rand.setSeed(SEED);
     }
 
-    final private LossFunction lossFunction;
+    private final LossFunction lossFunction;
 
-    final double[][][] W; // weights: W[l][j][i]
-    final double[][] b; // bias: b[l][j]
-    final int[] layerSizes;
+    private final double[][][] W; // weights: W[l][j][i]
+    private final double[][] b; // bias: b[l][j]
+    public final int[] layerSizes;
 
     private final double[][] a; // activations: a[l][j]
     private final double[][] z; // pre-activations: z[l][j]
@@ -82,10 +82,10 @@ public class FFN {
     // ============================================================
     // FORWARD PASS
     // ============================================================
-    record ForwardReturn(double[][] a, double[][] z) {
+    private record ForwardReturn(double[][] a, double[][] z) {
     }
 
-    ForwardReturn forward(double[] input) {
+    private ForwardReturn forward(double[] input) {
         a[0] = input.clone();
 
         for (int l = 1; l < layerSizes.length; l++) {
@@ -108,7 +108,7 @@ public class FFN {
     // ============================================================
     // BACKWARD PASS
     // ============================================================
-    double[][] backward(double[] yTrue, double[][] a, double[][] z) {
+    private double[][] backward(double[] yTrue, double[][] a, double[][] z) {
         int last = layerSizes.length - 1;
 
         double[] gradOut = lossFunction.gradient(a[last], yTrue);

@@ -29,14 +29,20 @@ public class NNActor extends Actor {
     private ENDED_STATUS oldLocalEndedStatus = null;
     private boolean eventHandlerRegistered = false;
 
-    public NNActor(PLAYER player, FFN net, FFNTrainer trainer, double alpha, double gamma, double epsilon, int stateBoardSelectionMultiplier) {
+    public NNActor(PLAYER player, FFN net, FFNTrainer trainer, double alpha, double gamma, double epsilon) {
         super(player);
         this.net = net;
         this.trainer = trainer;
         this.alpha = alpha;
         this.gamma = gamma;
         this.epsilon = epsilon;
-        this.stateBoardSelectionMultiplier = stateBoardSelectionMultiplier;
+        this.stateBoardSelectionMultiplier = (net.layerSizes[0] - 18 * 9) / 9;
+
+        // assertions
+        if (net.layerSizes[0] != 18 * 9 + 9 * stateBoardSelectionMultiplier)
+            throw new IllegalArgumentException("Input layer size of the neural network does not match the expected size based on the state representation.");
+        if (net.layerSizes[net.layerSizes.length - 1] != 9)
+            throw new IllegalArgumentException("Output layer size of the neural network must be 9 (one for each possible action).");
     }
 
     // ---------------------------
