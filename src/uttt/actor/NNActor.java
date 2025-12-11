@@ -1,12 +1,6 @@
 package uttt.actor;
 
 import nn.FFN;
-import nn.FFN_SGD;
-import nn.activation.ActivationFunction;
-import nn.activation.IdentityFunction;
-import nn.activation.SigmoidFunction;
-import nn.loss.LossFunction;
-import nn.loss.MeanSquaredError;
 
 import uttt.board.ENDED_STATUS;
 import uttt.board.Selection;
@@ -20,29 +14,26 @@ public class NNActor extends Actor {
         NOT_SET
     }
 
-    private static final int ACTIONS = 9;
-    private static final double GAMMA = 0.9;
-    private static final double EPSILON = 0.2;
-
+    private final FFN net;
     // repeating board selection inside the input to increase weight of this part
-    private static final int STATE_BOARD_SELECTION_MULTIPLIER = 3;
+    private final int stateBoardSelectionMultiplier;
 
-    private static final int INPUT_SIZE = 18 * 9 + 9 * STATE_BOARD_SELECTION_MULTIPLIER;
-    private static final int OUTPUT_SIZE = ACTIONS;
-    private static final int[] LAYER_SIZES = {INPUT_SIZE, 512, OUTPUT_SIZE};
-    public static final ActivationFunction HIDDEN_ACTIVATIONS = new SigmoidFunction();
-    private static final ActivationFunction OUTPUT_ACTIVATION = new IdentityFunction(); // SHOULD NOT BE CHANGED
-    private static final double ALPHA = 0.09;
-    private static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
+    private final double alpha; // learning rate
+    private final double gamma; // discount factor
+    private final double epsilon; // exploration rate
 
-    private final FFN net = new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION);
     private Selection lastAction = null;
     private double[] oldState = null;
     private ENDED_STATUS oldLocalEndedStatus = null;
     private boolean eventHandlerRegistered = false;
 
-    public NNActor(PLAYER player) {
+    public NNActor(PLAYER player, FFN net, double alpha, double gamma, double epsilon, int stateBoardSelectionMultiplier) {
         super(player);
+        this.net = net;
+        this.stateBoardSelectionMultiplier = stateBoardSelectionMultiplier;
+        this.alpha = alpha;
+        this.gamma = gamma;
+        this.epsilon = epsilon;
     }
 
     // ---------------------------
@@ -75,7 +66,7 @@ public class NNActor extends Actor {
             throw new IllegalArgumentException("No playable actions available!");
 
         // choose random action sometimes
-        if (Math.random() < EPSILON)
+        if (Math.random() < epsilon)
             return objects[(int) (Math.random() * objects.length)];
 
         double[] q = net.predictQ(state);
@@ -99,6 +90,7 @@ public class NNActor extends Actor {
     // ---------------------------
     private void train(double[] state, double[] newState, ENDED_STATUS globalEndedStatus, Selection action, Selection[] playableActions) {
         if (!eventHandlerRegistered)
+            //noinspection SpellCheckingInspection
             throw new IllegalStateException("Event handler not registered! Make sure to register the event handler of the NNActor in the Game before starting the game.");
 
         int reward = calculateReward(globalEndedStatus, oldLocalEndedStatus);
@@ -113,13 +105,13 @@ public class NNActor extends Actor {
             targetValue = reward;
         } else {
             double maxNext = q_sp[Utils.selectionToInt(predict(newState, playableActions))];
-            targetValue = reward + GAMMA * maxNext;
+            targetValue = reward + gamma * maxNext;
         }
 
 
         target[Utils.selectionToInt(action)] = targetValue;
 
-        net.train(state, target, ALPHA, LOSS_FUNCTION);
+        net.train(state, target, alpha);
     }
 
     // ---------------------------
@@ -181,10 +173,10 @@ public class NNActor extends Actor {
 
     private double[] getStateWithBoardSelection(CELL_STATE[][] state, Selection localBoardSel) {
         double[] doubleState = convertCellStateToDoubleState(state);
-        double[] extendedDoubleState = new double[doubleState.length + 9 * STATE_BOARD_SELECTION_MULTIPLIER];
+        double[] extendedDoubleState = new double[doubleState.length + 9 * stateBoardSelectionMultiplier];
 
         // copy original doubleState into extendedDoubleState at the end
-        System.arraycopy(doubleState, 0, extendedDoubleState, 9 * STATE_BOARD_SELECTION_MULTIPLIER, doubleState.length);
+        System.arraycopy(doubleState, 0, extendedDoubleState, 9 * stateBoardSelectionMultiplier, doubleState.length);
 
         double[] boardSelectionState = new double[9];
         int idx = (localBoardSel == null) ? -1 : Utils.selectionToInt(localBoardSel);
@@ -192,7 +184,7 @@ public class NNActor extends Actor {
             boardSelectionState[i] = (i == idx) ? 1.0 : 0.0;
         }
         // repeat board selection STATE_BOARD_SELECTION_MULTIPLIER times at the beginning
-        for (int i = 0; i < STATE_BOARD_SELECTION_MULTIPLIER; i++) {
+        for (int i = 0; i < stateBoardSelectionMultiplier; i++) {
             System.arraycopy(boardSelectionState, 0, extendedDoubleState, i * 9, 9);
         }
 

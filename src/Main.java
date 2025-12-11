@@ -1,4 +1,10 @@
 import helper.Stats;
+import nn.FFN_SGD;
+import nn.activation.ActivationFunction;
+import nn.activation.IdentityFunction;
+import nn.activation.SigmoidFunction;
+import nn.loss.LossFunction;
+import nn.loss.MeanSquaredError;
 import uttt.Game;
 import uttt.actor.NNActor;
 import uttt.actor.PLAYER;
@@ -6,8 +12,22 @@ import uttt.board.ENDED_STATUS;
 
 static final int EPISODES = 1000;
 
-static NNActor actorX = new NNActor(PLAYER.X);
-static NNActor actorO = new NNActor(PLAYER.O);
+// repeating board selection inside the input to increase weight of this part
+private static final int STATE_BOARD_SELECTION_MULTIPLIER = 3;
+
+private static final int INPUT_SIZE = 18 * 9 + 9 * STATE_BOARD_SELECTION_MULTIPLIER;
+private static final int OUTPUT_SIZE = 9;
+private static final int[] LAYER_SIZES = {INPUT_SIZE, 512, OUTPUT_SIZE};
+public static final ActivationFunction HIDDEN_ACTIVATIONS = new SigmoidFunction();
+private static final ActivationFunction OUTPUT_ACTIVATION = new IdentityFunction(); // SHOULD NOT BE CHANGED
+private static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
+
+private static final double ALPHA = 0.09;
+private static final double GAMMA = 0.9;
+private static final double EPSILON = 0.2;
+
+static NNActor actorX = new NNActor(PLAYER.X, new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
+static NNActor actorO = new NNActor(PLAYER.O, new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
 
 void main() {
     Stats stats = new Stats();
@@ -24,7 +44,7 @@ void main() {
         }
     }
 
-    stats.logAllEpisodesEnd(NNActor.HIDDEN_ACTIVATIONS);
+    stats.logAllEpisodesEnd(HIDDEN_ACTIVATIONS);
 }
 
 private static void runEpisode(Stats stats) {

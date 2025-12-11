@@ -15,22 +15,25 @@ public abstract class FFN {
         rand.setSeed(SEED);
     }
 
+    LossFunction lossFunction;
+
     final double[][][] W; // weights: W[l][j][i]
     final double[][] b; // bias: b[l][j]
     final int[] layerSizes;
 
-    private final double[][] a;
-    private final double[][] z;
-    private final double[][] delta;
+    private final double[][] a; // activations: a[l][j]
+    private final double[][] z; // pre-activations: z[l][j]
+    private final double[][] delta; // deltas: delta[l][j]
 
     private final ActivationFunction hiddenActivation;
     private final ActivationFunction outputActivation;
 
-    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation) {
+    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction) {
         this.layerSizes = layerSizes.clone();
 
         this.hiddenActivation = hiddenActivation;
         this.outputActivation = outputActivation;
+        this.lossFunction = lossFunction;
 
         W = new double[layerSizes.length][][];
         b = new double[layerSizes.length][];
@@ -140,6 +143,6 @@ public abstract class FFN {
         return a[outputLayer];
     }
 
-    public abstract void train(double[] state, double[] target, double learningRate, LossFunction lossFunction);
+    public abstract void train(double[] state, double[] target, double learningRate);
 
 }

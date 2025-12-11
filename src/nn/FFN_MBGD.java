@@ -13,8 +13,8 @@ public class FFN_MBGD extends FFN {
     private final double[][][] gradW;   // sum of weight-gradients
     private final double[][] gradB;    // sum of bias-gradients
 
-    public FFN_MBGD(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, int miniBatchSize) {
-        super(layerSizes, hiddenActivation, outputActivation);
+    public FFN_MBGD(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction, int miniBatchSize) {
+        super(layerSizes, hiddenActivation, outputActivation, lossFunction);
         this.miniBatchSize = miniBatchSize;
 
         gradW = new double[layerSizes.length][][];
@@ -28,7 +28,7 @@ public class FFN_MBGD extends FFN {
         }
     }
 
-    public void train(double[] state, double[] target, double learningRate, LossFunction lossFunction) {
+    public void train(double[] state, double[] target, double learningRate) {
         ForwardReturn fwd = forward(state);
 
         double[][] delta = backward(target, fwd.a(), fwd.z(), lossFunction);

@@ -4,11 +4,11 @@ import nn.activation.ActivationFunction;
 import nn.loss.LossFunction;
 
 public class FFN_SGD extends FFN {
-    public FFN_SGD(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation) {
-        super(layerSizes, hiddenActivation, outputActivation);
+    public FFN_SGD(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction) {
+        super(layerSizes, hiddenActivation, outputActivation, lossFunction);
     }
 
-    public void train(double[] state, double[] target, double learningRate, LossFunction lossFunction) {
+    public void train(double[] state, double[] target, double learningRate) {
         ForwardReturn fwd = forward(state);
 
         double[][] delta = backward(target, fwd.a(), fwd.z(), lossFunction);
