@@ -2,6 +2,7 @@ package uttt.actor;
 
 import nn.FFN;
 
+import nn.trainer.FFNTrainer;
 import uttt.board.ENDED_STATUS;
 import uttt.board.Selection;
 import uttt.observer.Event;
@@ -15,6 +16,7 @@ public class NNActor extends Actor {
     }
 
     private final FFN net;
+    private final FFNTrainer trainer;
     // repeating board selection inside the input to increase weight of this part
     private final int stateBoardSelectionMultiplier;
 
@@ -27,13 +29,14 @@ public class NNActor extends Actor {
     private ENDED_STATUS oldLocalEndedStatus = null;
     private boolean eventHandlerRegistered = false;
 
-    public NNActor(PLAYER player, FFN net, double alpha, double gamma, double epsilon, int stateBoardSelectionMultiplier) {
+    public NNActor(PLAYER player, FFN net, FFNTrainer trainer, double alpha, double gamma, double epsilon, int stateBoardSelectionMultiplier) {
         super(player);
         this.net = net;
-        this.stateBoardSelectionMultiplier = stateBoardSelectionMultiplier;
+        this.trainer = trainer;
         this.alpha = alpha;
         this.gamma = gamma;
         this.epsilon = epsilon;
+        this.stateBoardSelectionMultiplier = stateBoardSelectionMultiplier;
     }
 
     // ---------------------------
@@ -111,7 +114,7 @@ public class NNActor extends Actor {
 
         target[Utils.selectionToInt(action)] = targetValue;
 
-        net.train(state, target, alpha);
+        net.train(trainer, state, target, alpha);
     }
 
     // ---------------------------

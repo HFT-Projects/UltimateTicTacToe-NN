@@ -1,21 +1,19 @@
-package nn;
-
-import nn.activation.ActivationFunction;
-import nn.loss.LossFunction;
+package nn.trainer;
 
 import java.util.Arrays;
 
-@SuppressWarnings({"unused", "SpellCheckingInspection"})
-public class FFN_MBGD extends FFN {
+@SuppressWarnings("unused")
+public class FFNTrainerMBGB implements FFNTrainer {
     private final int miniBatchSize;
     private int miniBatchCounter = 0;
 
     private final double[][][] gradW;   // sum of weight-gradients
     private final double[][] gradB;    // sum of bias-gradients
+    private final int[] layerSizes;
 
-    public FFN_MBGD(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction, int miniBatchSize) {
-        super(layerSizes, hiddenActivation, outputActivation, lossFunction);
+    public FFNTrainerMBGB(int[] layerSizes, int miniBatchSize) {
         this.miniBatchSize = miniBatchSize;
+        this.layerSizes = layerSizes;
 
         gradW = new double[layerSizes.length][][];
         gradB = new double[layerSizes.length][];
@@ -28,16 +26,15 @@ public class FFN_MBGD extends FFN {
         }
     }
 
-    public void train(double[] state, double[] target, double learningRate) {
-        ForwardReturn fwd = forward(state);
-
-        double[][] delta = backward(target, fwd.a(), fwd.z(), lossFunction);
+    public void train(double[][] a, double[][] z, double[][] delta, double[][] b, double[][][] W, int[] layerSizes, double learningRate) {
+        if (!Arrays.equals(this.layerSizes, layerSizes))
+            throw new IllegalArgumentException("Layer sizes do not match trainer configuration.");
 
         for (int l = 1; l < delta.length; l++) {
             for (int j = 0; j < layerSizes[l]; j++) {
                 gradB[l][j] += delta[l][j];
                 for (int i = 0; i < layerSizes[l - 1]; i++) {
-                    gradW[l][j][i] += delta[l][j] * fwd.a()[l - 1][i];
+                    gradW[l][j][i] += delta[l][j] * a[l - 1][i];
                 }
             }
         }
@@ -46,13 +43,13 @@ public class FFN_MBGD extends FFN {
 
         // check if mini-batch is complete
         if (miniBatchCounter >= miniBatchSize) {
-            updateWeights(learningRate);
-            resetGradients();
+            updateWeights(learningRate, b, W, layerSizes);
+            resetGradients(layerSizes);
             miniBatchCounter = 0;
         }
     }
 
-    private void updateWeights(double learningRate) {
+    private void updateWeights(double learningRate, double[][] b, double[][][] W, int[] layerSizes) {
         for (int l = 1; l < gradB.length; l++) {
             for (int j = 0; j < layerSizes[l]; j++) {
                 b[l][j] -= learningRate * gradB[l][j] / miniBatchSize;
@@ -63,7 +60,7 @@ public class FFN_MBGD extends FFN {
         }
     }
 
-    private void resetGradients() {
+    private void resetGradients(int[] layerSizes) {
         for (int l = 1; l < gradB.length; l++) {
             Arrays.fill(gradB[l], 0.0);
             for (int j = 0; j < layerSizes[l]; j++) {

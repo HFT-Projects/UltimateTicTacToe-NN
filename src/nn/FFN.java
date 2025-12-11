@@ -3,11 +3,12 @@ package nn;
 import nn.activation.ActivationFunction;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
+import nn.trainer.FFNTrainer;
 
 import java.util.Random;
 
 
-public abstract class FFN {
+public class FFN {
     private static final long SEED = 42L;
     private static final Random rand = new Random();
 
@@ -15,7 +16,7 @@ public abstract class FFN {
         rand.setSeed(SEED);
     }
 
-    LossFunction lossFunction;
+    final private LossFunction lossFunction;
 
     final double[][][] W; // weights: W[l][j][i]
     final double[][] b; // bias: b[l][j]
@@ -107,7 +108,7 @@ public abstract class FFN {
     // ============================================================
     // BACKWARD PASS
     // ============================================================
-    public double[][] backward(double[] yTrue, double[][] a, double[][] z, LossFunction lossFunction) {
+    double[][] backward(double[] yTrue, double[][] a, double[][] z) {
         int last = layerSizes.length - 1;
 
         double[] gradOut = lossFunction.gradient(a[last], yTrue);
@@ -143,6 +144,9 @@ public abstract class FFN {
         return a[outputLayer];
     }
 
-    public abstract void train(double[] state, double[] target, double learningRate);
-
+    public void train(FFNTrainer trainer, double[] state, double[] target, double learningRate) {
+        ForwardReturn fwd = forward(state);
+        double[][] delta = backward(target, fwd.a(), fwd.z());
+        trainer.train(fwd.a(), fwd.z(), delta, b, W, layerSizes, learningRate);
+    }
 }

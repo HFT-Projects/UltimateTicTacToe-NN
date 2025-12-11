@@ -1,10 +1,11 @@
 import helper.Stats;
-import nn.FFN_SGD;
+import nn.FFN;
 import nn.activation.ActivationFunction;
 import nn.activation.IdentityFunction;
 import nn.activation.SigmoidFunction;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
+import nn.trainer.FFNTrainerSGD;
 import uttt.Game;
 import uttt.actor.NNActor;
 import uttt.actor.PLAYER;
@@ -26,8 +27,8 @@ private static final double ALPHA = 0.09;
 private static final double GAMMA = 0.9;
 private static final double EPSILON = 0.2;
 
-static NNActor actorX = new NNActor(PLAYER.X, new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
-static NNActor actorO = new NNActor(PLAYER.O, new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
+static NNActor actorX = new NNActor(PLAYER.X, new FFN(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), new FFNTrainerSGD(), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
+static NNActor actorO = new NNActor(PLAYER.O, new FFN(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, LOSS_FUNCTION), new FFNTrainerSGD(), ALPHA, GAMMA, EPSILON, STATE_BOARD_SELECTION_MULTIPLIER);
 
 void main() {
     Stats stats = new Stats();
