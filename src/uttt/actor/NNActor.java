@@ -1,6 +1,7 @@
 package uttt.actor;
 
 import nn.FFN;
+import nn.FFN_SGD;
 import nn.activation.ActivationFunction;
 import nn.activation.IdentityFunction;
 import nn.activation.SigmoidFunction;
@@ -34,7 +35,7 @@ public class NNActor extends Actor {
     private static final double ALPHA = 0.09;
     private static final LossFunction LOSS_FUNCTION = new MeanSquaredError();
 
-    private final FFN net = new FFN(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION, 100);
+    private final FFN net = new FFN_SGD(LAYER_SIZES, HIDDEN_ACTIVATIONS, OUTPUT_ACTIVATION);
     private Selection lastAction = null;
     private double[] oldState = null;
     private ENDED_STATUS oldLocalEndedStatus = null;
@@ -118,7 +119,7 @@ public class NNActor extends Actor {
 
         target[Utils.selectionToInt(action)] = targetValue;
 
-        net.trainFromAction(state, target, ALPHA, LOSS_FUNCTION);
+        net.train(state, target, ALPHA, LOSS_FUNCTION);
     }
 
     // ---------------------------
