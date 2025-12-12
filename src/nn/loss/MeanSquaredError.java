@@ -1,6 +1,6 @@
 package nn.loss;
 
-public class MeanSquaredError implements LossFunction {
+public class MeanSquaredError extends LossFunction {
 
     public double[] gradient(double[] predictions, double[] labels) {
         // Fehlergradient: Ableitung der Fehlerfunktion nach der Knotenausgabe
@@ -19,5 +19,10 @@ public class MeanSquaredError implements LossFunction {
             sum += 0.5 * (diff * diff);
         }
         return sum / labels.length;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof MeanSquaredError;
     }
 }
