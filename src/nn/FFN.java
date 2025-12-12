@@ -1,11 +1,15 @@
 package nn;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import helper.Utils;
 import nn.activation.ActivationFunction;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
 import nn.trainer.FFNTrainer;
 
-import java.util.Random;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 
 public class FFN {
@@ -22,6 +26,9 @@ public class FFN {
     private final double[][] b; // bias: b[l][j]
     public final int[] layerSizes;
 
+    // temp local variables for forward and backward pass
+    // only because we want to avoid re-allocating memory on each pass
+    // DO NOT READ BACK VALUES FROM THESE ARRAYS
     private final double[][] a; // activations: a[l][j]
     private final double[][] z; // pre-activations: z[l][j]
     private final double[][] delta; // deltas: delta[l][j]
@@ -148,5 +155,88 @@ public class FFN {
         ForwardReturn fwd = forward(state);
         double[][] delta = backward(target, fwd.a(), fwd.z());
         trainer.train(fwd.a(), fwd.z(), delta, b, W, layerSizes, learningRate);
+    }
+
+    public void save(String filepath) {
+        Map<String, Object> jsonO = new LinkedHashMap<>();
+        jsonO.put("W", W);
+        jsonO.put("b", b);
+        jsonO.put("layerSizes", layerSizes);
+        jsonO.put("hiddenActivation", Utils.activationToName.get(hiddenActivation));
+        jsonO.put("outputActivation", Utils.activationToName.get(outputActivation));
+        jsonO.put("lossFunction", Utils.lossToName.get(lossFunction));
+
+        try {
+            String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonO);
+
+            try (var writer = new java.io.FileWriter(filepath)) {
+                writer.write(json);
+            } catch (java.io.IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static FFN load(String filepath) {
+        try {
+            String json;
+            try (var reader = new java.io.FileReader(filepath)) {
+                json = reader.readAllAsString();
+            } catch (java.io.IOException e) {
+                throw new UncheckedIOException(e);
+            }
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> map = new ObjectMapper().readValue(json, Map.class);
+
+            @SuppressWarnings("unchecked")
+            double[][][] Wwithout0 = ((List<List<List<Double>>>) map.get("W")).stream().skip(1)
+                    .map(l2 -> l2.stream()
+                            .map(l1 -> l1.stream().mapToDouble(Double::doubleValue).toArray())
+                            .toArray(double[][]::new))
+                    .toArray(double[][][]::new);
+
+            double[][][] W = new double[Wwithout0.length + 1][][];
+            W[0] = null;
+            System.arraycopy(Wwithout0, 0, W, 1, Wwithout0.length);
+
+
+            @SuppressWarnings("unchecked")
+            double[][] bwithout0 = ((List<List<Double>>) map.get("b")).stream().skip(1)
+                    .map(l1 -> l1.stream().mapToDouble(Double::doubleValue).toArray())
+                    .toArray(double[][]::new);
+
+            double[][] b = new double[bwithout0.length + 1][];
+            b[0] = null;
+            System.arraycopy(bwithout0, 0, b, 1, bwithout0.length);
+
+            @SuppressWarnings("unchecked")
+            int[] layerSizes = ((List<Integer>) map.get("layerSizes")).stream().mapToInt(Integer::intValue).toArray();
+
+            ActivationFunction hiddenActivation = Utils.nameToActivation.get((String) map.get("hiddenActivation"));
+            ActivationFunction outputActivation = Utils.nameToActivation.get((String) map.get("outputActivation"));
+            LossFunction lossFunction = Utils.nameToLoss.get((String) map.get("lossFunction"));
+
+            FFN ffn = new FFN(layerSizes, hiddenActivation, outputActivation, lossFunction);
+            System.arraycopy(W, 0, ffn.W, 0, W.length);
+            System.arraycopy(b, 0, ffn.b, 0, b.length);
+
+            return ffn;
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj instanceof FFN other &&
+                Arrays.deepEquals(this.W, other.W) &&
+                Arrays.deepEquals(this.b, other.b) &&
+                Arrays.equals(this.layerSizes, other.layerSizes) &&
+                this.hiddenActivation.equals(other.hiddenActivation) &&
+                this.outputActivation.equals(other.outputActivation) &&
+                this.lossFunction.equals(other.lossFunction);
     }
 }
