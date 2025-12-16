@@ -44,21 +44,21 @@ public class Game {
             actionX = move(globalBoard, actorX, actionO);
 
             // exit if game has ended
-            if (globalBoard.ended() != null) {
+            if (globalBoard.calculateEndedStatus() != null) {
                 break;
             }
 
             actionO = move(globalBoard, actorO, actionX);
 
             // exit if game has ended
-            if (globalBoard.ended() != null) {
+            if (globalBoard.calculateEndedStatus() != null) {
                 break;
             }
         }
 
         System.out.println(Stats.boardToString(globalBoard));
 
-        return globalBoard.ended();
+        return globalBoard.calculateEndedStatus();
     }
 
     private Selection move(GlobalBoard globalBoard, Actor actor, @Nullable Selection desiredBoardIdx) {
@@ -69,14 +69,14 @@ public class Game {
             localBoard = globalBoard.getCell(desiredBoardIdx);
 
         // choose new board if the predetermined one is ended or not set
-        if (desiredBoardIdx == null || localBoard.ended() != null)
+        if (desiredBoardIdx == null || localBoard.calculateEndedStatus() != null)
             localBoard = globalBoard.getCell(actor.chooseBoard(state, globalBoard.getPlayableLocalBoards()));
 
         Selection action = actor.move(state, localBoard.getSelection(), localBoard.getPlayableActions());
         localBoard.setCell(action, actor.getPlayer());
 
-        ENDED_STATUS endedStatus = globalBoard.ended();
-        notifyObservers(actor, localBoard.getSelection(), action, state, globalBoard.getState(), endedStatus, localBoard.ended());
+        ENDED_STATUS endedStatus = globalBoard.calculateEndedStatus();
+        notifyObservers(actor, localBoard.getSelection(), action, state, globalBoard.getState(), endedStatus, localBoard.calculateEndedStatus());
 
         // LOGGING
         if (DEBUG_PRINT_EACH_MOVE) {

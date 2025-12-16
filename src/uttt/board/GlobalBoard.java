@@ -1,10 +1,7 @@
 package uttt.board;
 
-import org.jspecify.annotations.NonNull;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import uttt.actor.PLAYER;
 import helper.Utils;
@@ -29,36 +26,8 @@ public class GlobalBoard extends Board<LocalBoard> {
     }
 
     @Override
-   boolean won(Selection cell1, Selection cell2, Selection cell3, @NonNull AtomicReference<PLAYER> wonRef) {
-        ENDED_STATUS b1e = getCell(cell1).ended();
-        ENDED_STATUS b2e = getCell(cell2).ended();
-        ENDED_STATUS b3e = getCell(cell3).ended();
-
-        PLAYER b1w = Utils.ENDED_STATUS_TO_PLAYER.get(b1e);
-        PLAYER b2w = Utils.ENDED_STATUS_TO_PLAYER.get(b2e);
-        PLAYER b3w = Utils.ENDED_STATUS_TO_PLAYER.get(b3e);
-
-        if (b1w != null && b1w == b2w && b1w == b3w) {
-            wonRef.set(b1w);
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    boolean tied() {
-        // check if all local boards are ended
-        boolean tied = true;
-        for (int i = 0; i < 3; i++) {
-            for (int k = 0; k < 3; k++) {
-                LocalBoard board = getCell(new Selection(i, k));
-                if (board.ended() == null) {
-                    tied = false;
-                    break;
-                }
-            }
-        }
-        return tied;
+    public ENDED_STATUS calculateEndedStatus() {
+        return Utils.globalEnded(getState());
     }
 
     public Selection[] getPlayableLocalBoards() {
@@ -66,7 +35,7 @@ public class GlobalBoard extends Board<LocalBoard> {
         for (int i = 0; i < 3; i++) {
             for (int k = 0; k < 3; k++) {
                 LocalBoard board = getCell(new Selection(i, k));
-                if (board.ended() == null)
+                if (board.calculateEndedStatus() == null)
                     boards.add(board);
             }
         }

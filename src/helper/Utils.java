@@ -6,9 +6,11 @@ import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
 import uttt.board.Selection;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 @SuppressWarnings("unused")
 public final class Utils {
@@ -75,5 +77,41 @@ public final class Utils {
 
     public static Selection intToSelection(int index) {
         return new Selection(index / 3, index % 3);
+    }
+
+    private static final int[][] wins = {
+            {0, 1, 2}, {3, 4, 5}, {6, 7, 8}, // rows
+            {0, 3, 6}, {1, 4, 7}, {2, 5, 8}, // columns
+            {0, 4, 8}, {2, 4, 6}             // diagonals
+    };
+
+    private static <T> ENDED_STATUS ended(T[] state, Function<T, ENDED_STATUS> converter) {
+        for (int[] win : wins) {
+            if (state[win[0]] != null && state[win[0]] != ENDED_STATUS.TIE && state[win[0]] == state[win[1]] && state[win[1]] == state[win[2]]) {
+                return converter.apply(state[win[0]]);
+            }
+        }
+
+        boolean full = true;
+        for (T s : state) {
+            if (s == null) {
+                full = false;
+                break;
+            }
+        }
+
+        if (full)
+            return ENDED_STATUS.TIE;
+
+        return null;
+    }
+
+    public static ENDED_STATUS globalEnded(PLAYER[][] state) {
+        ENDED_STATUS[] localEnds = Arrays.stream(state).map(Utils::localEnded).toArray(ENDED_STATUS[]::new);
+        return ended(localEnds, Function.identity());
+    }
+
+    public static ENDED_STATUS localEnded(PLAYER[] state) {
+        return ended(state, PLAYER_TO_ENDED_STATUS::get);
     }
 }
