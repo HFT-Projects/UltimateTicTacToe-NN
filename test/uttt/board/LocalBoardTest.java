@@ -1,5 +1,6 @@
 package uttt.board;
 
+import helper.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +44,7 @@ public class LocalBoardTest {
     @Test
     public void getValidActionsTest() {
         Selection[] validActions = board.getPlayableActions();
-        Selection[] expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(9).mapToObj(i -> new Selection(i / 3, i % 3)).toArray(Selection[]::new);
+        Selection[] expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(9).mapToObj(Utils::intToSelection).toArray(Selection[]::new);
         assertArrayEquals(validActions, expectedValidActions);
 
         board.setCell(new Selection(2, 2), PLAYER.X);
@@ -51,7 +52,7 @@ public class LocalBoardTest {
         board.setCell(new Selection(2, 0), PLAYER.O);
 
         validActions = board.getPlayableActions();
-        expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(6).mapToObj(i -> new Selection(i / 3, i % 3)).toArray(Selection[]::new);
+        expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(6).mapToObj(Utils::intToSelection).toArray(Selection[]::new);
         assertArrayEquals(validActions, expectedValidActions);
     }
 
@@ -59,7 +60,7 @@ public class LocalBoardTest {
     public void testTied() {
         assertFalse(board.tied());
         for (int i = 0; i < 9; i++) {
-            board.setCell(new Selection(i / 3, i % 3), PLAYER.O);
+            board.setCell(Utils.intToSelection(i), PLAYER.O);
         }
         assertTrue(board.tied());
     }

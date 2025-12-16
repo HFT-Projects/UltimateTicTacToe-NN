@@ -72,4 +72,8 @@ public final class Utils {
     public static int selectionToInt(Selection sel) {
         return sel.idxRow() * 3 + sel.idxColumn();
     }
+
+    public static Selection intToSelection(int index) {
+        return new Selection(index / 3, index % 3);
+    }
 }
