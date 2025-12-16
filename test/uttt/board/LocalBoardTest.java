@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import uttt.actor.PLAYER;
 
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 
 public class LocalBoardTest {
@@ -57,68 +56,70 @@ public class LocalBoardTest {
     }
 
     @Test
-    public void testTied() {
-        assertFalse(board.tied());
-        for (int i = 0; i < 9; i++) {
-            board.setCell(Utils.intToSelection(i), PLAYER.O);
-        }
-        assertTrue(board.tied());
-    }
-
-    @Test
-    public void testWinAllRows() {
-        for (int i = 0; i < 3; i++) {
-            final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
-
-            board.setCell(new Selection(i, 0), PLAYER.X);
-            board.setCell(new Selection(i, 1), PLAYER.X);
-            board.setCell(new Selection(i, 2), PLAYER.X);
-
-            assertTrue(board.won(new Selection(i, 0), new Selection(i, 1), new Selection(i, 2), wonRef));
-            assertEquals(PLAYER.X, wonRef.get());
+    public void testWinRowsCalculateEndedStatus() {
+        for (int r = 0; r < 3; r++) {
+            board = new LocalBoard(new Selection(0, 0));
+            board.setCell(new Selection(r, 0), PLAYER.X);
+            board.setCell(new Selection(r, 1), PLAYER.X);
+            board.setCell(new Selection(r, 2), PLAYER.X);
+            assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
         }
     }
 
     @Test
-    public void testWinAllColumns() {
-        for (int i = 0; i < 3; i++) {
-            final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
-            board.setCell(new Selection(0, i), PLAYER.X);
-            board.setCell(new Selection(1, i), PLAYER.X);
-            board.setCell(new Selection(2, i), PLAYER.X);
-            assertTrue(board.won(new Selection(0, i), new Selection(1, i), new Selection(2, i), wonRef));
-            assertEquals(PLAYER.X, wonRef.get());
+    public void testWinColumnsCalculateEndedStatus() {
+        for (int c = 0; c < 3; c++) {
+            board = new LocalBoard(new Selection(0, 0));
+            board.setCell(new Selection(0, c), PLAYER.X);
+            board.setCell(new Selection(1, c), PLAYER.X);
+            board.setCell(new Selection(2, c), PLAYER.X);
+            assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
         }
     }
 
     @Test
-    public void testWinDiagonalsNegative() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
+    public void testWinDiagonalsCalculateEndedStatus() {
+        board = new LocalBoard(new Selection(0, 0));
         board.setCell(new Selection(0, 0), PLAYER.X);
         board.setCell(new Selection(1, 1), PLAYER.X);
         board.setCell(new Selection(2, 2), PLAYER.X);
-        assertTrue(board.won(new Selection(0, 0), new Selection(1, 1), new Selection(2, 2), wonRef));
-        assertEquals(PLAYER.X, wonRef.get());
-    }
+        assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
 
-    @Test
-    public void testWinDiagonalsPositive() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
+        board = new LocalBoard(new Selection(0, 0));
         board.setCell(new Selection(0, 2), PLAYER.X);
         board.setCell(new Selection(1, 1), PLAYER.X);
         board.setCell(new Selection(2, 0), PLAYER.X);
-        assertTrue(board.won(new Selection(0, 2), new Selection(1, 1), new Selection(2, 0), wonRef));
-        assertEquals(PLAYER.X, wonRef.get());
+        assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
     }
 
     @Test
-    public void testWinFalse() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
+    public void testCalculateEndedStatusNotEnded() {
+        board = new LocalBoard(new Selection(0, 0));
         board.setCell(new Selection(0, 0), PLAYER.X);
         board.setCell(new Selection(1, 0), PLAYER.X);
         board.setCell(new Selection(0, 2), PLAYER.X);
-        assertFalse(board.won(new Selection(0, 0), new Selection(0, 1), new Selection(0, 2), wonRef));
-        assertNull(wonRef.get());
+        assertNull(board.calculateEndedStatus());
+    }
+
+    @Test
+    public void testTiedCalculateEndedStatus() {
+        board = new LocalBoard(new Selection(0, 0));
+        // fill board without any winning line -> tie expected
+        // O X O
+        // X X O
+        // O O X
+        int[] xIndices = {1, 3, 4, 8};
+        for (int i = 0; i < 9; i++) {
+            Selection sel = Utils.intToSelection(i);
+            boolean isX = false;
+            for (int x : xIndices)
+                if (i == x) {
+                    isX = true;
+                    break;
+                }
+            board.setCell(sel, isX ? PLAYER.X : PLAYER.O);
+        }
+        assertEquals(ENDED_STATUS.TIE, board.calculateEndedStatus());
     }
 
     @Test

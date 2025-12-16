@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 import uttt.actor.PLAYER;
 
 public class GlobalBoardTest {
@@ -54,6 +52,8 @@ public class GlobalBoardTest {
     @AfterEach
     public void teardown() {
         globalBoardX = null;
+        globalBoardO = null;
+        globalBoardTied = null;
     }
 
     @Test
@@ -62,68 +62,28 @@ public class GlobalBoardTest {
     }
 
     @Test
-    public void TestWonX() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
-        assertTrue(globalBoardX.won(new Selection(0, 0), new Selection(0, 1), new Selection(0, 2), wonRef));
-        assertEquals(PLAYER.X, wonRef.get());
-    }
-
-    @Test
-    public void TestWonO() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
-        assertTrue(globalBoardO.won(new Selection(0, 0), new Selection(0, 1), new Selection(0, 2), wonRef));
-        assertEquals(PLAYER.O, wonRef.get());
-    }
-
-    @Test
-    public void TestNotWon() {
-        final AtomicReference<PLAYER> wonRef = new AtomicReference<>();
-        assertFalse(globalBoardX.won(new Selection(0, 0), new Selection(0, 1), new Selection(2, 2), wonRef));
-        assertNull(wonRef.get());
-    }
-
-    @Test
-    public void testTied() {
-        assertFalse(globalBoardX.tied());
-        for (int i = 0; i < 9; i++) {
-            for (int j = 0; j < 9; j++) {
-                Selection selO = Utils.intToSelection(i);
-                Selection selI = Utils.intToSelection(j);
-                if (globalBoardX.getCell(selO).getCell(selI) == null) {
-                    if ((i + j) % 2 == 0) {
-                        globalBoardX.getCell(selO).setCell(selI, PLAYER.X);
-                    } else {
-                        globalBoardX.getCell(selO).setCell(selI, PLAYER.O);
-                    }
-                }
-            }
-        }
-        assertTrue(globalBoardX.tied());
-    }
-
-    @Test
     public void TestEndedWonX() {
-        assertEquals(ENDED_STATUS.X, globalBoardX.ended());
+        assertEquals(ENDED_STATUS.X, globalBoardX.calculateEndedStatus());
     }
 
     @Test
     public void TestEndedWonO() {
-        assertEquals(ENDED_STATUS.O, globalBoardO.ended());
+        assertEquals(ENDED_STATUS.O, globalBoardO.calculateEndedStatus());
     }
 
     @Test
     public void TestEndedNotWonX() {
-        assertNotEquals(ENDED_STATUS.X, globalBoardO.ended());
+        assertNotEquals(ENDED_STATUS.X, globalBoardO.calculateEndedStatus());
     }
 
     @Test
     public void TestEndedTied() {
-        assertEquals(ENDED_STATUS.TIE, globalBoardTied.ended());
+        assertEquals(ENDED_STATUS.TIE, globalBoardTied.calculateEndedStatus());
     }
 
     @Test
     public void TestEndedNotEnded() {
         GlobalBoard gb = new GlobalBoard();
-        assertNull(gb.ended());
+        assertNull(gb.calculateEndedStatus());
     }
 }
