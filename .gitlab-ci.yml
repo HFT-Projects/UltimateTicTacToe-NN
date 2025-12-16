@@ -5,4 +5,4 @@ test:junit:
   stage: test
   image: maven:3-eclipse-temurin
   script:
-    - mvn test
+    - mvn test -Dtest=AllTest
