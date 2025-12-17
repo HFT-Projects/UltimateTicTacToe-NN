@@ -113,6 +113,15 @@ namespace uttt {
       - calculateReward(globalEndedStatus: ENDED_STATUS, localEndedStatus: ENDED_STATUS): int
     }
 
+    class GUIActor extends Actor {
+      - moveHandler: TriFunction<PLAYER[][], Integer, int[], Integer> {read-only}
+      - chooseBoardHandler: BiFunction<PLAYER[][], int[], Integer> {read-only}
+
+      + GUIActor(player: PLAYER, moveHandler: TriFunction<PLAYER[][], Integer, int[], Integer>, chooseBoardHandler: BiFunction<PLAYER[][], int[], Integer>)
+      + move(state: PLAYER[][], localBoardSel: int, playableActions: int[]): int
+      + chooseBoard(state: PLAYER[][], playableBoards: int[]): int
+    }
+
     enum PLAYER {
       X
       O

@@ -17,9 +17,9 @@ public class FFN {
 
     private final Random rand = new Random();
 
-    private final ActivationFunction hiddenActivation;
-    private final ActivationFunction outputActivation;
-    private final LossFunction lossFunction;
+    public final ActivationFunction hiddenActivation;
+    public final ActivationFunction outputActivation;
+    public final LossFunction lossFunction;
 
     public final int[] layerSizes;
     private final double[][][] W; // weights: W[l][j][i]
