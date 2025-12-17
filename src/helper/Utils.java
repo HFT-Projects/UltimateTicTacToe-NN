@@ -4,7 +4,6 @@ import nn.activation.*;
 import nn.loss.*;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
-import uttt.board.Selection;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -68,15 +67,6 @@ public final class Utils {
             nameToLossTemp.put(lossToNameTemp.get(lf), lf);
         }
         nameToLoss = Collections.unmodifiableMap(nameToLossTemp);
-    }
-
-
-    public static int selectionToInt(Selection sel) {
-        return sel.idxRow() * 3 + sel.idxColumn();
-    }
-
-    public static Selection intToSelection(int index) {
-        return new Selection(index / 3, index % 3);
     }
 
     private static final int[][] wins = {

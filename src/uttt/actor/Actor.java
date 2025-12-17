@@ -1,7 +1,5 @@
 package uttt.actor;
 
-import uttt.board.Selection;
-
 public abstract class Actor {
     private final PLAYER player;
 
@@ -13,7 +11,7 @@ public abstract class Actor {
         return this.player;
     }
 
-    public abstract Selection move(PLAYER[][] state, Selection localBoardSel, Selection[] playableActions);
+    public abstract int move(PLAYER[][] state, int localBoardSel, int[] playableActions);
 
-    public abstract Selection chooseBoard(PLAYER[][] state, Selection[] playableBoards);
+    public abstract int chooseBoard(PLAYER[][] state, int[] playableBoards);
 }

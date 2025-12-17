@@ -1,6 +1,5 @@
 package uttt.board;
 
-import helper.Utils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +15,7 @@ public class LocalBoardTest {
 
     @BeforeEach
     public void setup() {
-        board = new LocalBoard(new Selection(0, 0));
+        board = new LocalBoard(0);
     }
 
     @AfterEach
@@ -26,9 +25,9 @@ public class LocalBoardTest {
 
     @Test
     public void getStateTest() {
-        board.setCell(new Selection(0, 0), PLAYER.X);
-        board.setCell(new Selection(1, 2), PLAYER.X);
-        board.setCell(new Selection(2, 2), PLAYER.O);
+        board.setCell(0, PLAYER.X);
+        board.setCell(5, PLAYER.X);
+        board.setCell(8, PLAYER.O);
 
         PLAYER[] expectedState = {PLAYER.X, null, null, null, null, PLAYER.X, null, null, PLAYER.O};
         assertArrayEquals(board.getState(), expectedState);
@@ -36,32 +35,32 @@ public class LocalBoardTest {
 
     @Test
     public void ThrowCellAlreadySetException() {
-        board.setCell(new Selection(0, 0), PLAYER.X);
-        assertThrows(CellAlreadySetException.class, () -> board.setCell(new Selection(0, 0), PLAYER.O));
+        board.setCell(0, PLAYER.X);
+        assertThrows(CellAlreadySetException.class, () -> board.setCell(0, PLAYER.O));
     }
 
     @Test
     public void getValidActionsTest() {
-        Selection[] validActions = board.getPlayableActions();
-        Selection[] expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(9).mapToObj(Utils::intToSelection).toArray(Selection[]::new);
+        int[] validActions = board.getPlayableActions();
+        int[] expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(9).toArray();
         assertArrayEquals(validActions, expectedValidActions);
 
-        board.setCell(new Selection(2, 2), PLAYER.X);
-        board.setCell(new Selection(2, 1), PLAYER.O);
-        board.setCell(new Selection(2, 0), PLAYER.O);
+        board.setCell(8, PLAYER.X);
+        board.setCell(7, PLAYER.O);
+        board.setCell(6, PLAYER.O);
 
         validActions = board.getPlayableActions();
-        expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(6).mapToObj(Utils::intToSelection).toArray(Selection[]::new);
+        expectedValidActions = IntStream.iterate(0, i -> i + 1).limit(6).toArray();
         assertArrayEquals(validActions, expectedValidActions);
     }
 
     @Test
     public void testWinRowsCalculateEndedStatus() {
         for (int r = 0; r < 3; r++) {
-            board = new LocalBoard(new Selection(0, 0));
-            board.setCell(new Selection(r, 0), PLAYER.X);
-            board.setCell(new Selection(r, 1), PLAYER.X);
-            board.setCell(new Selection(r, 2), PLAYER.X);
+            board = new LocalBoard(0);
+            board.setCell(3 * r, PLAYER.X);
+            board.setCell(3 * r + 1, PLAYER.X);
+            board.setCell(3 * r + 2, PLAYER.X);
             assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
         }
     }
@@ -69,61 +68,60 @@ public class LocalBoardTest {
     @Test
     public void testWinColumnsCalculateEndedStatus() {
         for (int c = 0; c < 3; c++) {
-            board = new LocalBoard(new Selection(0, 0));
-            board.setCell(new Selection(0, c), PLAYER.X);
-            board.setCell(new Selection(1, c), PLAYER.X);
-            board.setCell(new Selection(2, c), PLAYER.X);
+            board = new LocalBoard(0);
+            board.setCell(c, PLAYER.X);
+            board.setCell(3 + c, PLAYER.X);
+            board.setCell(6 + c, PLAYER.X);
             assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
         }
     }
 
     @Test
     public void testWinDiagonalsCalculateEndedStatus() {
-        board = new LocalBoard(new Selection(0, 0));
-        board.setCell(new Selection(0, 0), PLAYER.X);
-        board.setCell(new Selection(1, 1), PLAYER.X);
-        board.setCell(new Selection(2, 2), PLAYER.X);
+        board = new LocalBoard(0);
+        board.setCell(0, PLAYER.X);
+        board.setCell(4, PLAYER.X);
+        board.setCell(8, PLAYER.X);
         assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
 
-        board = new LocalBoard(new Selection(0, 0));
-        board.setCell(new Selection(0, 2), PLAYER.X);
-        board.setCell(new Selection(1, 1), PLAYER.X);
-        board.setCell(new Selection(2, 0), PLAYER.X);
+        board = new LocalBoard(0);
+        board.setCell(2, PLAYER.X);
+        board.setCell(4, PLAYER.X);
+        board.setCell(6, PLAYER.X);
         assertEquals(ENDED_STATUS.X, board.calculateEndedStatus());
     }
 
     @Test
     public void testCalculateEndedStatusNotEnded() {
-        board = new LocalBoard(new Selection(0, 0));
-        board.setCell(new Selection(0, 0), PLAYER.X);
-        board.setCell(new Selection(1, 0), PLAYER.X);
-        board.setCell(new Selection(0, 2), PLAYER.X);
+        board = new LocalBoard(0);
+        board.setCell(0, PLAYER.X);
+        board.setCell(3, PLAYER.X);
+        board.setCell(2, PLAYER.X);
         assertNull(board.calculateEndedStatus());
     }
 
     @Test
     public void testTiedCalculateEndedStatus() {
-        board = new LocalBoard(new Selection(0, 0));
+        board = new LocalBoard(0);
         // fill board without any winning line -> tie expected
         // O X O
         // X X O
         // O O X
         int[] xIndices = {1, 3, 4, 8};
         for (int i = 0; i < 9; i++) {
-            Selection sel = Utils.intToSelection(i);
             boolean isX = false;
             for (int x : xIndices)
                 if (i == x) {
                     isX = true;
                     break;
                 }
-            board.setCell(sel, isX ? PLAYER.X : PLAYER.O);
+            board.setCell(i, isX ? PLAYER.X : PLAYER.O);
         }
         assertEquals(ENDED_STATUS.TIE, board.calculateEndedStatus());
     }
 
     @Test
     public void testWinOutOfBoundsException() {
-        assertThrows(IndexOutOfBoundsException.class, () -> board.setCell(new Selection(3, 3), PLAYER.X));
+        assertThrows(IndexOutOfBoundsException.class, () -> board.setCell(12, PLAYER.X));
     }
 }

@@ -3,31 +3,30 @@ package uttt.board;
 import helper.Utils;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import uttt.actor.PLAYER;
 
 public class LocalBoard extends Board<PLAYER> {
-    private final Selection selection;
+    private final int idx;
 
-    public LocalBoard(Selection sel) {
-        selection = sel;
+    public LocalBoard(int idx) {
+        this.idx = idx;
         super(PLAYER.class);
     }
 
-    public Selection getSelection() {
-        return selection;
+    public int getIdx() {
+        return idx;
     }
 
-    public void setCell(Selection sel, PLAYER player) {
-        if (getCell(sel) != null)
+    public void setCell(int idx, PLAYER player) {
+        if (getCell(idx) != null)
             throw new CellAlreadySetException();
-        board[sel.idxRow()][sel.idxColumn()] = player;
+        board[idx] = player;
     }
 
     public PLAYER[] getState() {
-        return Arrays.stream(board).flatMap(Arrays::stream).toArray(PLAYER[]::new);
+        return board.clone();
     }
 
     @Override
@@ -35,15 +34,14 @@ public class LocalBoard extends Board<PLAYER> {
         return Utils.localEnded(getState());
     }
 
-    public Selection[] getPlayableActions() {
+    public int[] getPlayableActions() {
         // get all valid actions -> empty cells
-        List<Selection> actions = new ArrayList<>();
+        List<Integer> actions = new ArrayList<>();
 
-        for (int i = 0; i < 3; i++)
-            for (int k = 0; k < 3; k++)
-                if (getCell(new Selection(i, k)) == null)
-                    actions.add(new Selection(i, k));
+        for (int i = 0; i < 9; i++)
+            if (getCell(i) == null)
+                actions.add(i);
 
-        return actions.toArray(new Selection[0]);
+        return actions.stream().mapToInt(Integer::valueOf).toArray();
     }
 }

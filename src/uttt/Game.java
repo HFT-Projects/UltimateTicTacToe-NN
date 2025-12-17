@@ -1,6 +1,5 @@
 package uttt;
 
-import helper.Utils;
 import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -10,7 +9,6 @@ import java.util.List;
 import helper.Stats;
 import uttt.actor.Actor;
 import uttt.actor.PLAYER;
-import uttt.board.Selection;
 import uttt.board.ENDED_STATUS;
 import uttt.board.GlobalBoard;
 import uttt.board.LocalBoard;
@@ -37,8 +35,8 @@ public class Game {
     }
 
     public ENDED_STATUS run() {
-        Selection actionX;
-        Selection actionO = null;
+        int actionX;
+        Integer actionO = null;
 
         while (true) {
             actionX = move(globalBoard, actorX, actionO);
@@ -61,7 +59,7 @@ public class Game {
         return globalBoard.calculateEndedStatus();
     }
 
-    private Selection move(GlobalBoard globalBoard, Actor actor, @Nullable Selection desiredBoardIdx) {
+    private int move(GlobalBoard globalBoard, Actor actor, @Nullable Integer desiredBoardIdx) {
         PLAYER[][] state = globalBoard.getState();
 
         LocalBoard localBoard = null;
@@ -72,15 +70,15 @@ public class Game {
         if (desiredBoardIdx == null || localBoard.calculateEndedStatus() != null)
             localBoard = globalBoard.getCell(actor.chooseBoard(state, globalBoard.getPlayableLocalBoards()));
 
-        Selection action = actor.move(state, localBoard.getSelection(), localBoard.getPlayableActions());
+        int action = actor.move(state, localBoard.getIdx(), localBoard.getPlayableActions());
         localBoard.setCell(action, actor.getPlayer());
 
         ENDED_STATUS endedStatus = globalBoard.calculateEndedStatus();
-        notifyObservers(actor, localBoard.getSelection(), action, state, globalBoard.getState(), endedStatus, localBoard.calculateEndedStatus());
+        notifyObservers(actor, localBoard.getIdx(), action, state, globalBoard.getState(), endedStatus, localBoard.calculateEndedStatus());
 
         // LOGGING
         if (DEBUG_PRINT_EACH_MOVE) {
-            String out = Stats.boardToString(globalBoard, Utils.selectionToInt(localBoard.getSelection()), Utils.selectionToInt(action));
+            String out = Stats.boardToString(globalBoard, localBoard.getIdx(), action);
             System.out.println(out);
         }
 
@@ -96,7 +94,7 @@ public class Game {
         observers.remove(observer);
     }
 
-    private void notifyObservers(Actor actor, Selection boardSel, Selection actionSel, PLAYER[][] oldState, PLAYER[][] newState, ENDED_STATUS globalEndedStatus, ENDED_STATUS localEndedStatus) {
+    private void notifyObservers(Actor actor, int boardSel, int actionSel, PLAYER[][] oldState, PLAYER[][] newState, ENDED_STATUS globalEndedStatus, ENDED_STATUS localEndedStatus) {
         Event e = new Event(actor.getPlayer(), boardSel, actionSel, oldState, newState, globalEndedStatus, localEndedStatus);
         for (Observer observer : observers) {
             observer.notify(e);

@@ -4,7 +4,6 @@ import nn.FFN;
 
 import nn.trainer.FFNTrainer;
 import uttt.board.ENDED_STATUS;
-import uttt.board.Selection;
 import uttt.observer.Event;
 import helper.Utils;
 
@@ -24,7 +23,7 @@ public class NNActor extends Actor {
     private final double gamma; // discount factor
     private final double epsilon; // exploration rate
 
-    private Selection lastAction = null;
+    private Integer lastAction = null;
     private double[] oldState = null;
     private ENDED_STATUS oldLocalEndedStatus = null;
     private boolean eventHandlerRegistered = false;
@@ -49,7 +48,7 @@ public class NNActor extends Actor {
     //     CHOOSE ACTION
     // ---------------------------
     @Override
-    public Selection move(PLAYER[][] state, Selection localBoardSel, Selection[] playableActions) {
+    public int move(PLAYER[][] state, int localBoardSel, int[] playableActions) {
         double[] stateDouble = getStateWithBoardSelection(convertPlayerStateToCellState(state), localBoardSel);
         if (lastAction == null ^ oldState == null)
             throw new IllegalStateException("Inconsistent internal state: lastAction and oldState should both be null or both be non-null.");
@@ -63,14 +62,14 @@ public class NNActor extends Actor {
     //     CHOOSE BOARD
     // ---------------------------
     @Override
-    public Selection chooseBoard(PLAYER[][] state, Selection[] playableBoards) {
+    public int chooseBoard(PLAYER[][] state, int[] playableBoards) {
         return predict(getStateWithBoardSelection(convertPlayerStateToCellState(state), null), playableBoards);
     }
 
     // ---------------------------
     //     NN PREDICT ACTION
     // ---------------------------
-    private Selection predict(double[] state, Selection[] objects) {
+    private int predict(double[] state, int[] objects) {
         if (objects.length < 1)
             throw new IllegalArgumentException("No playable actions available!");
 
@@ -80,13 +79,13 @@ public class NNActor extends Actor {
 
         double[] q = net.predictQ(state);
 
-        Selection bestObj = objects[0];
-        double bestQ = q[Utils.selectionToInt(bestObj)];
+        int bestObj = objects[0];
+        double bestQ = q[bestObj];
         // select action with bestQ but ONLY out of available actions for this move
         for (int i = 1; i < objects.length; i++) {
-            Selection action = objects[i];
-            if (q[Utils.selectionToInt(action)] > bestQ) {
-                bestQ = q[Utils.selectionToInt(action)];
+            int action = objects[i];
+            if (q[action] > bestQ) {
+                bestQ = q[action];
                 bestObj = action;
             }
         }
@@ -97,7 +96,7 @@ public class NNActor extends Actor {
     // ---------------------------
     //        NN-UPDATE
     // ---------------------------
-    private void train(double[] state, double[] newState, ENDED_STATUS globalEndedStatus, Selection action, Selection[] playableActions) {
+    private void train(double[] state, double[] newState, ENDED_STATUS globalEndedStatus, int action, int[] playableActions) {
         if (!eventHandlerRegistered)
             //noinspection SpellCheckingInspection
             throw new IllegalStateException("Event handler not registered! Make sure to register the event handler of the NNActor in the Game before starting the game.");
@@ -113,12 +112,12 @@ public class NNActor extends Actor {
         if (globalEndedStatus != null) {
             targetValue = reward;
         } else {
-            double maxNext = q_sp[Utils.selectionToInt(predict(newState, playableActions))];
+            double maxNext = q_sp[predict(newState, playableActions)];
             targetValue = reward + gamma * maxNext;
         }
 
 
-        target[Utils.selectionToInt(action)] = targetValue;
+        target[action] = targetValue;
 
         net.train(trainer, state, target, alpha);
     }
@@ -180,7 +179,7 @@ public class NNActor extends Actor {
         return stateDouble;
     }
 
-    private double[] getStateWithBoardSelection(CELL_STATE[][] state, Selection localBoardSel) {
+    private double[] getStateWithBoardSelection(CELL_STATE[][] state, Integer localBoardSel) {
         double[] doubleState = convertCellStateToDoubleState(state);
         double[] extendedDoubleState = new double[doubleState.length + 9 * stateBoardSelectionMultiplier];
 
@@ -188,7 +187,7 @@ public class NNActor extends Actor {
         System.arraycopy(doubleState, 0, extendedDoubleState, 9 * stateBoardSelectionMultiplier, doubleState.length);
 
         double[] boardSelectionState = new double[9];
-        int idx = (localBoardSel == null) ? -1 : Utils.selectionToInt(localBoardSel);
+        int idx = (localBoardSel == null) ? -1 : localBoardSel;
         for (int i = 0; i < 9; i++) {
             boardSelectionState[i] = (i == idx) ? 1.0 : 0.0;
         }

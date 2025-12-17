@@ -6,8 +6,8 @@ namespace uttt {
 
       + Actor(player: PLAYER)
       + getPlayer(): PLAYER
-      + {abstract} move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
-      + {abstract} chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
+      + {abstract} move(state: PLAYER[][], localBoardSel: int, playableActions: int[]): int
+      + {abstract} chooseBoard(state: PLAYER[][], playableBoards: int[]): int
     }
 
     class NNActor extends Actor {
@@ -17,20 +17,20 @@ namespace uttt {
       - alpha: double {read-only}
       - gamma: double {read-only}
       - epsilon: double {read-only}
-      - lastAction: Selection = null
+      - lastAction: Integer = null
       - oldState: double[] = null
       - oldLocalEndedStatus: ENDED_STATUS = null
       - eventHandlerRegistered: boolean = false
 
       + NNActor(player: PLAYER, net: FFN, trainer: FFNTrainer, alpha: double, gamma: double, epsilon: double)
-      + move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
-      + chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
-      - predict(state: double[], objects: Selection[]): Selection
-      - train(state: double[], newState: double[], globalEndedStatus: ENDED_STATUS, action: Selection, playableActions: Selection[])
+      + move(state: PLAYER[][], localBoardSel: int, playableActions: int[]): int
+      + chooseBoard(state: PLAYER[][], playableBoards: int[]): int
+      - predict(state: double[], objects: int[]): int
+      - train(state: double[], newState: double[], globalEndedStatus: ENDED_STATUS, action: int, playableActions: int[])
       + eventHandler(event: Observer.Event)
       - convertPlayerStateToCellState(state: PLAYER[][]): CELL_STATE[][]
       - convertCellStateToDoubleState(state: CELL_STATE[][]): double[]
-      - getStateWithBoardSelection(state: CELL_STATE[][], localBoardSel: Selection): double[]
+      - getStateWithBoardSelection(state: CELL_STATE[][], localBoardSel: Integer): double[]
       - calculateReward(globalEndedStatus: ENDED_STATUS, localEndedStatus: ENDED_STATUS): int
     }
 
@@ -53,7 +53,7 @@ namespace uttt {
         ~ board: T[3][3] {read-only}
 
         + Board(cls: Class<T>)
-        + getCell(sel: Selection): T
+        + getCell(idx: int): T
         + {abstract} calculateEndedStatus(): ENDED_STATUS
     }
 
@@ -61,19 +61,19 @@ namespace uttt {
       + GlobalBoard()
       + getState(): PLAYER[][]
       + calculateEndedStatus(): ENDED_STATUS
-      + getPlayableLocalBoards(): Selection[]
+      + getPlayableLocalBoards(): int[]
     }
 
     class LocalBoard extends Board {
         - board: PLAYER[3][3] {read-only}
-        - selection: Selection {read-only}
+        - idx: int {read-only}
 
-        + LocalBoard(sel: Selection)
-        + getSelection(): Selection
-        + setCell(sel: Selection, player: PLAYER)
+        + LocalBoard(idx: int)
+        + getIdx(): int
+        + setCell(idx: int, player: PLAYER)
         + getState(): PLAYER[]
         + calculateEndedStatus(): ENDED_STATUS
-        + getPlayableActions(): Selection[]
+        + getPlayableActions(): int[]
     }
 
     GlobalBoard --> "9 board[3][3]" LocalBoard
@@ -81,12 +81,6 @@ namespace uttt {
     exception CellAlreadySetException {
     }
     hide CellAlreadySetException members
-
-    record Selection {
-      idxRow: int
-      idxColumn: int
-    }
-    hide Selection methods
 
     enum ENDED_STATUS {
       X,
@@ -99,7 +93,7 @@ namespace uttt {
   namespace observer {
     record Event {
       player: PLAYER
-      board: Selection
+      board: int
       oldState: PLAYER[][]
       newState: PLAYER[][]
       globalEndedStatus: ENDED_STATUS
@@ -116,8 +110,8 @@ namespace uttt {
   namespace storage {
     record Move {
       player: PLAYER
-      board: Selection
-      action: Selection
+      board: int
+      action: int
       localEndedStatus: ENDED_STATUS
       globalEndedStatus: ENDED_STATUS
     }
@@ -148,7 +142,7 @@ namespace uttt {
     + Game(actorX: Actor, actorO: Actor, observers: Observer[])
     + Game(actorX: Actor, actorO: Actor)
     + run()
-    - move(globalBoard: GlobalBoard, actor: Actor, desiredBoardIdx: Selection): Selection
+    - move(globalBoard: GlobalBoard, actor: Actor, desiredBoardIdx: int): int
     + addObserver(observer: Observer)
     + removeObserver(observer: Observer)
     - notifyObservers(...)
@@ -184,8 +178,6 @@ namespace helper {
       - {static} wins: int[][] {read-only}
 
       - Utils()
-      + {static} selectionToInt(sel: Selection): int
-      + {static} intToSelection(index: int): Selection
       - {static} <T> ENDED_STATUS ended(T[], converter: Function<T, ENDED_STATUS>): ENDED_STATUS
       + {static} globalEnded(state: PLAYER[][]): ENDED_STATUS
       + {static} localEnded(state: PLAYER[]): ENDED_STATUS

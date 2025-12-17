@@ -9,19 +9,17 @@ import helper.Utils;
 public class GlobalBoard extends Board<LocalBoard> {
     public GlobalBoard() {
         super(LocalBoard.class);
-        for (int i = 0; i < 3; i++)
-            for (int k = 0; k < 3; k++)
-                board[i][k] = new LocalBoard(new Selection(i, k));
+        for (int i = 0; i < 9; i++)
+            board[i] = new LocalBoard(i);
     }
 
     public PLAYER[][] getState() {
         PLAYER[][] state = new PLAYER[9][];
-        for (int i = 0; i < 3; i++) {
-            for (int k = 0; k < 3; k++) {
-                PLAYER[] localState = getCell(new Selection(i, k)).getState();
-                state[3*i+k] = localState;
-            }
+        for (int i = 0; i < 9; i++) {
+            PLAYER[] localState = getCell(i).getState();
+            state[i] = localState;
         }
+
         return state;
     }
 
@@ -30,15 +28,13 @@ public class GlobalBoard extends Board<LocalBoard> {
         return Utils.globalEnded(getState());
     }
 
-    public Selection[] getPlayableLocalBoards() {
+    public int[] getPlayableLocalBoards() {
         List<LocalBoard> boards = new ArrayList<>();
-        for (int i = 0; i < 3; i++) {
-            for (int k = 0; k < 3; k++) {
-                LocalBoard board = getCell(new Selection(i, k));
-                if (board.calculateEndedStatus() == null)
-                    boards.add(board);
-            }
+        for (int i = 0; i < 9; i++) {
+            LocalBoard board = getCell(i);
+            if (board.calculateEndedStatus() == null)
+                boards.add(board);
         }
-        return boards.stream().map(LocalBoard::getSelection).toArray(Selection[]::new);
+        return boards.stream().map(LocalBoard::getIdx).mapToInt(Integer::valueOf).toArray();
     }
 }

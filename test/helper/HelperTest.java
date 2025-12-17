@@ -6,32 +6,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
-import uttt.board.Selection;
 
 public class HelperTest {
-    @Test
-    public void testSelectionToInt() {
-        Selection sel = new Selection(2, 1);
-        int result = Utils.selectionToInt(sel);
-        assertEquals(7, result);
-    }
-
-    @Test
-    public void testIntToSelection() {
-        Selection sel = Utils.intToSelection(7);
-        assertEquals(2, sel.idxRow());
-        assertEquals(1, sel.idxColumn());
-    }
-
-    @Test
-    public void testSelectionRoundTrip() {
-        Selection original = new Selection(0, 2);
-        int idx = Utils.selectionToInt(original);
-        Selection back = Utils.intToSelection(idx);
-        assertEquals(original.idxRow(), back.idxRow());
-        assertEquals(original.idxColumn(), back.idxColumn());
-    }
-
     // Helper functions for test boards
     private PLAYER[] makeWinningBoard(PLAYER p) {
         PLAYER[] b = new PLAYER[9];

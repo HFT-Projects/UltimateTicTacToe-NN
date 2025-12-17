@@ -4,7 +4,6 @@ import nn.activation.ActivationFunction;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
 import uttt.board.GlobalBoard;
-import uttt.board.Selection;
 
 public class Stats {
     private int o_wins = 0;
@@ -52,7 +51,7 @@ public class Stats {
                     int subIndex = bigRow * 3 + bigCol; // 0..8 small boards
                     for (int innerCol = 0; innerCol < 3; innerCol++) {
                         int cellIndex = innerRow * 3 + innerCol; // 0..8 inside small board
-                        PLAYER cell = board.getCell(new Selection(bigRow, bigCol)).getCell(new Selection(innerRow, innerCol));
+                        PLAYER cell = board.getCell(subIndex).getCell(cellIndex);
                         String ch = (cell == PLAYER.X) ? "x"
                                 : (cell == PLAYER.O) ? "o" : ".";
                         if (subIndex == globalCellIndex && cellIndex == localCellIndex)

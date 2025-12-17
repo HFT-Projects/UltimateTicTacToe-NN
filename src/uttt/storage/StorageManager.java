@@ -2,10 +2,8 @@ package uttt.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import helper.Utils;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
-import uttt.board.Selection;
 
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -17,11 +15,11 @@ public final class StorageManager {
 
     private static Map<String, Object> moveToMap(Move move) {
         Map<String, Object> serialized = new LinkedHashMap<>();
-        Selection b = move.board();
-        Selection a = move.action();
+        int b = move.board();
+        int a = move.action();
         serialized.put("player", move.player());
-        serialized.put("board", Utils.selectionToInt(b));
-        serialized.put("action", Utils.selectionToInt(a));
+        serialized.put("board", b);
+        serialized.put("action", a);
         serialized.put("localEndedStatus", move.localEndedStatus());
         serialized.put("globalEndedStatus", move.globalEndedStatus());
 
@@ -62,8 +60,8 @@ public final class StorageManager {
             throw new IllegalArgumentException("Action index out of bounds: " + a);
 
         return new Move(player,
-                Utils.intToSelection(b),
-                Utils.intToSelection(a),
+                b,
+                a,
                 localEndedStatus,
                 globalEndedStatus);
     }
@@ -111,8 +109,8 @@ public final class StorageManager {
     }
 
     private static void applyMove(PLAYER[][] state, Move move) {
-        int boardIdx = Utils.selectionToInt(move.board());
-        int actionIdx = Utils.selectionToInt(move.action());
+        int boardIdx = move.board();
+        int actionIdx = move.action();
         state[boardIdx][actionIdx] = move.player();
     }
 
