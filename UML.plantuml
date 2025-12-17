@@ -1,4 +1,85 @@
 @startuml
+namespace nn {
+  class FFN {
+    - {static} SEED: long {read-only}
+    - rand: Random {read-only}
+    + layerSizes: int[] {read-only}
+    - W: double[][][] {final}
+    - b: double[][] {final}
+    - a: double[][] {final}
+    - z: double[][] {final}
+    - delta: double[][] {final}
+
+    + FFN(layerSizes: int[], hiddenActivation: ActivationFunction, outputActivation: ActivationFunction, lossFunction: LossFunction)
+    - initWeights(layerSizes: int[])
+    - forward(input: double[]): ForwardReturn
+    - backward(yTrue: double[], a: double[][], z: double[][]): double[][]
+    + predictQ(state: double[]): double[]
+    + train(trainer: FFNTrainer, state: double[], target: double[], learningRate: double)
+    + save(filepath: String)
+    + {static} load(filepath: String): FFN
+    + equals(obj: Object): boolean
+  }
+
+  note right of FFN::z
+  a, z & delta are temp local variables for forward and backward pass
+  only because we want to avoid re-allocating memory on each pass
+  DO NOT READ BACK VALUES FROM THESE ARRAYS
+  end note
+
+  record FFN::ForwardReturn {
+    a: double[][]
+    z: double[][]
+  }
+  hide "FFN::ForwardReturn" methods
+
+  namespace trainer {
+    interface FFNTrainer {
+      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+    }
+
+    class FFNTrainerSGD implements FFNTrainer {
+      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+      - updateWeights(delta: double[][], a: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+    }
+
+    class FFNTrainerMBGD implements FFNTrainer {
+      - miniBatchSize: int {read-only}
+      - miniBatchCounter: int = 0
+      - gradW: double[][][] {final}
+      - gradB: double[][] {final}
+      - layerSizes: int[] {read-only}
+
+      + FFNTrainerMBGD(layerSizes: int[], miniBatchSize: int)
+      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+      - updateWeights(learningRate: double, b: double[][], W: double[][][], layerSizes: int[])
+      - resetGradients(layerSizes: int[])
+    }
+  }
+
+  namespace loss {
+    abstract class LossFunction {
+      + {abstract} gradient(prediction: double[], target: double[]): double[]
+      + {abstract} loss(predictions: double[], labels: double[]): double
+      + {abstract} equals(obj: Object): boolean
+      + hashCode(): int
+    }
+  }
+
+  namespace activation {
+    abstract class ActivationFunction {
+      + {abstract} activate(x: double): double
+      + {abstract} activateDerivative(x: double): double
+      + {abstract} equals(obj: Object): boolean
+      + hashCode(): int
+    }
+  }
+
+  FFN --> "1 hiddenActivation" activation.ActivationFunction
+  FFN --> "1 outputActivation" activation.ActivationFunction
+  FFN --> "1 lossFunction" loss.LossFunction
+}
+
 namespace uttt {
   namespace actor {
     abstract class Actor {
@@ -11,8 +92,6 @@ namespace uttt {
     }
 
     class NNActor extends Actor {
-      - net: FFN {read-only}
-      - trainer: FFNTrainer {read-only}
       - stateBoardSelectionMultiplier: int {read-only}
       - alpha: double {read-only}
       - gamma: double {read-only}
@@ -50,7 +129,7 @@ namespace uttt {
 
   namespace board {
     abstract class Board <T> {
-        ~ board: T[3][3] {read-only}
+        ~ board: T[3][3] {final}
 
         + Board(cls: Class<T>)
         + getCell(idx: int): T
@@ -58,6 +137,8 @@ namespace uttt {
     }
 
     class GlobalBoard extends Board {
+      - board: LocalBoard[3][3] {final}
+
       + GlobalBoard()
       + getState(): PLAYER[][]
       + calculateEndedStatus(): ENDED_STATUS
@@ -65,7 +146,7 @@ namespace uttt {
     }
 
     class LocalBoard extends Board {
-        - board: PLAYER[3][3] {read-only}
+        - board: PLAYER[3][3] {final}
         - idx: int {read-only}
 
         + LocalBoard(idx: int)
@@ -131,7 +212,7 @@ namespace uttt {
     }
 
     class MoveHistoryGenerator {
-      - List<Move> history {read-only}
+      - List<Move> history {final}
 
       + MoveHistoryGenerator()
       + getHistory(): Move[]
@@ -154,6 +235,10 @@ namespace uttt {
   Game --> "1 actorO" Actor
   Game --> "*" Observer
 }
+
+uttt.actor.NNActor --> "1 trainer" nn.trainer.FFNTrainer
+uttt.actor.NNActor --> "1 net" nn.FFN
+
 
 namespace helper {
     class Stats {
