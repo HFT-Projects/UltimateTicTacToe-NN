@@ -124,6 +124,7 @@ namespace uttt {
       + {static} save(moves: Move[], filepath: String)
       + {static} load(filepath: String): Move[]
       - {static} <T> deeperClone(source: T[][]): T[][]
+      - {static} applyMove(state: PLAYER[][], board: int, action: int, player: PLAYER)
       - {static} applyMove(state: PLAYER[][], move: Move)
       + {static} movesToState(moves: Move[]): PLAYER[][]
       + {static} movesToStates(moves: Move[]): PLAYER[][][]

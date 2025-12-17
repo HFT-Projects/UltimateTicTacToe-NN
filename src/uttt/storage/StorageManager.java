@@ -2,6 +2,7 @@ package uttt.storage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import helper.Utils;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
 
@@ -20,35 +21,16 @@ public final class StorageManager {
         serialized.put("player", move.player());
         serialized.put("board", b);
         serialized.put("action", a);
-        serialized.put("localEndedStatus", move.localEndedStatus());
-        serialized.put("globalEndedStatus", move.globalEndedStatus());
 
         // make map immutable
         return Collections.unmodifiableMap(serialized);
     }
 
-    private static Move mapToMove(Map<String, Object> map) {
+    private static Move mapToMove(Map<String, Object> map, PLAYER[][] state) {
         PLAYER player = switch ((String) map.get("player")) {
             case "X" -> PLAYER.X;
             case "O" -> PLAYER.O;
             default -> throw new IllegalArgumentException("Unknown player: " + map.get("player"));
-        };
-
-        ENDED_STATUS localEndedStatus = switch ((String) map.get("localEndedStatus")) {
-            case null -> null;
-            case "X" -> ENDED_STATUS.X;
-            case "O" -> ENDED_STATUS.O;
-            case "TIE" -> ENDED_STATUS.TIE;
-            default -> throw new IllegalArgumentException("Unknown local ended status: " + map.get("localEndedStatus"));
-        };
-
-        ENDED_STATUS globalEndedStatus = switch ((String) map.get("globalEndedStatus")) {
-            case null -> null;
-            case "X" -> ENDED_STATUS.X;
-            case "O" -> ENDED_STATUS.O;
-            case "TIE" -> ENDED_STATUS.TIE;
-            default ->
-                    throw new IllegalArgumentException("Unknown global ended status: " + map.get("globalEndedStatus"));
         };
 
         int b = (Integer) map.get("board");
@@ -58,6 +40,14 @@ public final class StorageManager {
         int a = (Integer) map.get("action");
         if (a < 0 || a > 8)
             throw new IllegalArgumentException("Action index out of bounds: " + a);
+
+        applyMove(state, b, a, player);
+
+        ENDED_STATUS localEndedStatus = Utils.localEnded(state[b]);
+        ENDED_STATUS globalEndedStatus = null;
+        // only check global ended status if local has ended
+        if (localEndedStatus != null)
+            globalEndedStatus = Utils.globalEnded(state);
 
         return new Move(player,
                 b,
@@ -92,8 +82,9 @@ public final class StorageManager {
 
             @SuppressWarnings("unchecked")
             List<Object> list = new ObjectMapper().readValue(json, List.class);
+            PLAYER[][] state = new PLAYER[9][9];
             @SuppressWarnings("unchecked")
-            Move[] moves = list.stream().map(e -> (Map<String, Object>) e).map(StorageManager::mapToMove).toArray(Move[]::new);
+            Move[] moves = list.stream().map(e -> (Map<String, Object>) e).map(m -> mapToMove(m, state)).toArray(Move[]::new);
             return moves;
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -108,10 +99,12 @@ public final class StorageManager {
         return copy;
     }
 
+    private static void applyMove(PLAYER[][] state, int board, int action, PLAYER player) {
+        state[board][action] = player;
+    }
+
     private static void applyMove(PLAYER[][] state, Move move) {
-        int boardIdx = move.board();
-        int actionIdx = move.action();
-        state[boardIdx][actionIdx] = move.player();
+        applyMove(state, move.board(), move.action(), move.player());
     }
 
     public static PLAYER[][] movesToState(Move[] moves) {
