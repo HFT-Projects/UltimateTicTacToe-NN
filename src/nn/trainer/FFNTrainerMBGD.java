@@ -3,7 +3,7 @@ package nn.trainer;
 import java.util.Arrays;
 
 @SuppressWarnings("unused")
-public class FFNTrainerMBGB implements FFNTrainer {
+public class FFNTrainerMBGD implements FFNTrainer {
     private final int miniBatchSize;
     private int miniBatchCounter = 0;
 
@@ -11,7 +11,7 @@ public class FFNTrainerMBGB implements FFNTrainer {
     private final double[][] gradB;    // sum of bias-gradients
     private final int[] layerSizes;
 
-    public FFNTrainerMBGB(int[] layerSizes, int miniBatchSize) {
+    public FFNTrainerMBGD(int[] layerSizes, int miniBatchSize) {
         this.miniBatchSize = miniBatchSize;
         this.layerSizes = layerSizes;
 
