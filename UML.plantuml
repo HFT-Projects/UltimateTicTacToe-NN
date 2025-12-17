@@ -1,8 +1,5 @@
 @startuml
 namespace uttt {
-  class Game {
-  }
-
   namespace actor {
     abstract class Actor {
       - player : PLAYER {read-only}
@@ -15,12 +12,17 @@ namespace uttt {
 
     class NNActor extends Actor {
       - net: FFN {read-only}
+      - trainer: FFNTrainer {read-only}
+      - stateBoardSelectionMultiplier: int {read-only}
+      - alpha: double {read-only}
+      - gamma: double {read-only}
+      - epsilon: double {read-only}
       - lastAction: Selection = null
       - oldState: double[] = null
       - oldLocalEndedStatus: ENDED_STATUS = null
       - eventHandlerRegistered: boolean = false
 
-      + NNActor(player: PLAYER)
+      + NNActor(player: PLAYER, net: FFN, trainer: FFNTrainer, alpha: double, gamma: double, epsilon: double)
       + move(state: PLAYER[][], localBoardSel: Selection, playableActions: Selection[]): Selection
       + chooseBoard(state: PLAYER[][], playableBoards: Selection[]): Selection
       - predict(state: double[], objects: Selection[]): Selection
@@ -48,20 +50,17 @@ namespace uttt {
 
   namespace board {
     abstract class Board <T> {
-        # board: T[3][3] {read-only}
+        ~ board: T[3][3] {read-only}
 
         + Board(cls: Class<T>)
         + getCell(sel: Selection): T
-        ~ {abstract} won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
-        ~ {abstract} tied(): boolean
-        + ended(): ENDED_STATUS
+        + {abstract} calculateEndedStatus(): ENDED_STATUS
     }
 
     class GlobalBoard extends Board {
       + GlobalBoard()
       + getState(): PLAYER[][]
-      ~ won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
-      ~ tied(): boolean
+      + calculateEndedStatus(): ENDED_STATUS
       + getPlayableLocalBoards(): Selection[]
     }
 
@@ -73,9 +72,8 @@ namespace uttt {
         + getSelection(): Selection
         + setCell(sel: Selection, player: PLAYER)
         + getState(): PLAYER[]
+        + calculateEndedStatus(): ENDED_STATUS
         + getPlayableActions(): Selection[]
-        ~ won(cell1: Selection, cell2: Selection, cell3: Selection, wonRef: AtomicReference<PLAYER>): boolean
-        ~ tied(): boolean
     }
 
     GlobalBoard --> "9 board[3][3]" LocalBoard
@@ -179,9 +177,18 @@ namespace helper {
     class Utils {
       + {static} ENDED_STATUS_TO_PLAYER: Map<ENDED_STATUS, PLAYER> {read-only}
       + {static} PLAYER_TO_ENDED_STATUS: Map<PLAYER, ENDED_STATUS> {read-only}
+      + {static} activationToName: Map<ActivationFunction, String> {read-only}
+      + {static} nameToActivation: Map<String, ActivationFunction> {read-only}
+      + {static} lossToName: Map<LossFunction, String> {read-only}
+      + {static} nameToLoss: Map<String, LossFunction> {read-only}
+      - {static} wins: int[][] {read-only}
 
       - Utils()
       + {static} selectionToInt(sel: Selection): int
+      + {static} intToSelection(index: int): Selection
+      - {static} <T> ENDED_STATUS ended(T[], converter: Function<T, ENDED_STATUS>): ENDED_STATUS
+      + {static} globalEnded(state: PLAYER[][]): ENDED_STATUS
+      + {static} localEnded(state: PLAYER[]): ENDED_STATUS
     }
 }
 @enduml
