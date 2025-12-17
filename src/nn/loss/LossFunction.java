@@ -13,6 +13,9 @@ public abstract class LossFunction {
     public abstract double loss(double[] predictions, double[] labels);
 
     @Override
+    public abstract boolean equals(Object obj);
+
+    @Override
     public int hashCode() {
         return 0;
     }
