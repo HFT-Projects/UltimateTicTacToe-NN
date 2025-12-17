@@ -14,17 +14,16 @@ import java.util.*;
 
 public class FFN {
     private static final long SEED = 42L;
-    private static final Random rand = new Random();
 
-    static {
-        rand.setSeed(SEED);
-    }
+    private final Random rand = new Random();
 
+    private final ActivationFunction hiddenActivation;
+    private final ActivationFunction outputActivation;
     private final LossFunction lossFunction;
 
+    public final int[] layerSizes;
     private final double[][][] W; // weights: W[l][j][i]
     private final double[][] b; // bias: b[l][j]
-    public final int[] layerSizes;
 
     // temp local variables for forward and backward pass
     // only because we want to avoid re-allocating memory on each pass
@@ -33,10 +32,9 @@ public class FFN {
     private final double[][] z; // pre-activations: z[l][j]
     private final double[][] delta; // deltas: delta[l][j]
 
-    private final ActivationFunction hiddenActivation;
-    private final ActivationFunction outputActivation;
-
     public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction) {
+        rand.setSeed(SEED);
+
         this.layerSizes = layerSizes.clone();
 
         this.hiddenActivation = hiddenActivation;
