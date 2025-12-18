@@ -14,7 +14,6 @@ import java.util.*;
 
 public class FFN {
     private static final long SEED = 42L;
-
     private final Random rand = new Random();
 
     public final ActivationFunction hiddenActivation;
@@ -146,7 +145,7 @@ public class FFN {
 
         double[][] a = forward(state).a();
 
-        return a[outputLayer];
+        return a[outputLayer].clone();
     }
 
     public void train(FFNTrainer trainer, double[] state, double[] target, double learningRate) {
