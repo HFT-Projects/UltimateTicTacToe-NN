@@ -162,7 +162,7 @@ public class NNActor extends Actor {
         double[] stateDouble = new double[9 * 9 * 2];
         for (int i = 0; i < 9; i++) {
             for (int k = 0; k < 9; k++) {
-                int idx1 = i * 9 + 2 * k;
+                int idx1 = i * 9 * 2 + 2 * k;
                 int idx2 = idx1 + 1;
                 if (state[i][k] == CELL_STATE.YOU) {
                     stateDouble[idx1] = 1;
