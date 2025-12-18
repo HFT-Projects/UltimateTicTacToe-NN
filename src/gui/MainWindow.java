@@ -49,7 +49,7 @@ public class MainWindow extends Application {
 
         fileChooser = new FileChooser();
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("CSV Files", "*.json")
+                new FileChooser.ExtensionFilter("JSON Files", "*.json")
         );
         fileChooser.setInitialDirectory(new File(mainPreferences.get("last_directory", System.getProperty("user.dir"))));
 
