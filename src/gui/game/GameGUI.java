@@ -12,10 +12,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import nn.FFN;
 import uttt.Game;
-import uttt.actor.Actor;
-import uttt.actor.GUIActor;
-import uttt.actor.NNActor;
-import uttt.actor.PLAYER;
+import uttt.actor.*;
 import uttt.board.ENDED_STATUS;
 import uttt.storage.Move;
 import uttt.storage.MoveHistoryGenerator;
@@ -25,7 +22,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class GameGUI {
-    public enum GAME_MODE {NN_VS_NN, HUMAN_VS_NN}
+    public enum GAME_MODE {NN_VS_NN, HUMAN_VS_NN, NN_VS_ALGORITHM, HUMAN_VS_ALGORITHM}
 
     public enum HUMAN_PLAYER_SYMBOL {X, O, RANDOM}
 
@@ -65,7 +62,7 @@ public class GameGUI {
     }
 
     // Run the underlying game and populate history (async)
-    public void run(GAME_MODE mode, HUMAN_PLAYER_SYMBOL humanPlayerSymbolChoice, int trainingRunsCount, Runnable onComplete) throws NNNotProvidedException {
+    public void run(GAME_MODE mode, HUMAN_PLAYER_SYMBOL humanPlayerSymbolChoice, int trainingRunsCount, int dfsStrength, Runnable onComplete) throws NNNotProvidedException {
         if (ran)
             throw new RuntimeException("GameGUI can only run / load once per instance.");
         ran = true;
@@ -96,6 +93,21 @@ public class GameGUI {
                 tParams1 = nnParametersProvider.apply(0);
                 tParams2 = nnParametersProvider.apply(1);
                 break;
+            case NN_VS_ALGORITHM:
+                if (nnProvider.apply(0) == null)
+                    throw new NNNotProvidedException(0, "NN 1 must be provided for NN_VS_ALGORITHM mode.");
+                if (humanPlayerSymbolChoice != null)
+                    throw new IllegalArgumentException("Human player symbol must be null for NN_VS_ALGORITHM mode.");
+                if (trainingRunsCount < 0)
+                    throw new IllegalArgumentException("Training runs count must be non-negative for NN_VS_ALGORITHM mode.");
+                tParams1 = nnParametersProvider.apply(0);
+                break;
+            case HUMAN_VS_ALGORITHM:
+                if (humanPlayerSymbolChoice == null)
+                    throw new IllegalArgumentException("Human player symbol must be specified for HUMAN_VS_ALGORITHM mode.");
+                if (trainingRunsCount != 0)
+                    throw new IllegalArgumentException("Training runs count must be zero for HUMAN_VS_ALGORITHM mode.");
+                break;
             default:
                 throw new IllegalArgumentException("Unknown game mode: " + mode);
         }
@@ -115,7 +127,7 @@ public class GameGUI {
                     case NN_VS_NN: {
                         actorX = new NNActor(PLAYER.X, nnProvider.apply(0), fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
                         actorO = new NNActor(PLAYER.O, nnProvider.apply(1), fParams2.trainer(), fParams2.alpha(), fParams2.gamma(), fParams2.epsilon());
-                        runTrainingGames((NNActor) actorX, (NNActor) actorO, trainingRunsCount);
+                        runTrainingGames(actorX, actorO, trainingRunsCount);
                         break;
                     }
                     case HUMAN_VS_NN: {
@@ -139,6 +151,39 @@ public class GameGUI {
                         }
                         break;
                     }
+                    case NN_VS_ALGORITHM: {
+                        actorX = new NNActor(PLAYER.X, nnProvider.apply(0), fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
+                        DFSActor dfsActor = new DFSActor(PLAYER.O);
+                        dfsActor.setStrength(dfsStrength);
+                        actorO = dfsActor;
+                        runTrainingGames(actorX, actorO, trainingRunsCount);
+                        break;
+                    }
+                    case HUMAN_VS_ALGORITHM: {
+                        if (humanPlayerSymbol == HUMAN_PLAYER_SYMBOL.RANDOM) {
+                            humanPlayerSymbol = Math.random() < 0.5 ? HUMAN_PLAYER_SYMBOL.X : HUMAN_PLAYER_SYMBOL.O;
+                        }
+                        //noinspection EnhancedSwitchMigration
+                        switch (humanPlayerSymbol) {
+                            case X: {
+                                actorX = guiActor = new GUIActor(PLAYER.X, this::moveEvent, this::chooseBoardEvent);
+                                DFSActor dfsActor = new DFSActor(PLAYER.O);
+                                dfsActor.setStrength(dfsStrength);
+                                actorO = dfsActor;
+                                break;
+                            }
+                            case O: {
+                                DFSActor dfsActor = new DFSActor(PLAYER.X);
+                                dfsActor.setStrength(dfsStrength);
+                                actorX = dfsActor;
+                                actorO = guiActor = new GUIActor(PLAYER.O, this::moveEvent, this::chooseBoardEvent);
+                                break;
+                            }
+                            default:
+                                throw new IllegalArgumentException("Unknown human player symbol: " + humanPlayerSymbol);
+                        }
+                        break;
+                    }
                     default:
                         throw new IllegalArgumentException("Unknown game mode: " + mode);
                 }
@@ -151,14 +196,16 @@ public class GameGUI {
 
                 game.addObserver(e -> {
                     moveHistoryGenerator.handleEvent(e);
-                    if (mode == GAME_MODE.HUMAN_VS_NN)
+                    if (mode == GAME_MODE.HUMAN_VS_NN || mode == GAME_MODE.HUMAN_VS_ALGORITHM)
                         Platform.runLater(this::goToEnd);
                 });
 
                 switch (mode) {
+                    case HUMAN_VS_ALGORITHM:
                     case HUMAN_VS_NN:
                         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Game running..."));
                         break;
+                    case NN_VS_ALGORITHM:
                     case NN_VS_NN:
                         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("Game running..."));
                         break;
@@ -183,7 +230,7 @@ public class GameGUI {
         return pane;
     }
 
-    private void runTrainingGames(NNActor actorX, NNActor actorO, int count) {
+    private void runTrainingGames(Actor actorX, Actor actorO, int count) {
         if (actorX == null)
             throw new IllegalArgumentException("NN 1 must be provided for NN_VS_NN mode.");
         if (actorO == null)
@@ -191,13 +238,15 @@ public class GameGUI {
 
         for (int i = 0; i < count; i++) {
             if (Math.random() > 0.5) {
-                NNActor tmp = actorX;
+                Actor tmp = actorX;
                 actorX = actorO;
                 actorO = tmp;
             }
             Game game = new Game(actorX, actorO);
-            game.addObserver(actorX::eventHandler);
-            game.addObserver(actorO::eventHandler);
+            if (actorX instanceof NNActor)
+                game.addObserver(((NNActor)actorX)::eventHandler);
+            if (actorO instanceof NNActor)
+                game.addObserver(((NNActor)actorO)::eventHandler);
             game.run();
         }
     }
