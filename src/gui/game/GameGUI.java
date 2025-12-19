@@ -20,6 +20,7 @@ import uttt.storage.StorageManager;
 
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public class GameGUI {
     public enum GAME_MODE {NN_VS_NN, HUMAN_VS_NN, NN_VS_ALGORITHM, HUMAN_VS_ALGORITHM}
@@ -125,9 +126,13 @@ public class GameGUI {
 
                 switch (mode) {
                     case NN_VS_NN: {
-                        actorX = new NNActor(PLAYER.X, nnProvider.apply(0), fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
-                        actorO = new NNActor(PLAYER.O, nnProvider.apply(1), fParams2.trainer(), fParams2.alpha(), fParams2.gamma(), fParams2.epsilon());
-                        runTrainingGames(actorX, actorO, trainingRunsCount);
+                        FFN netX = nnProvider.apply(0);
+                        FFN netO = nnProvider.apply(1);
+                        Supplier<Actor> getActorX = () -> new NNActor(PLAYER.X, netX, fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
+                        Supplier<Actor> getActorO = () -> new NNActor(PLAYER.O, netO, fParams2.trainer(), fParams2.alpha(), fParams2.gamma(), fParams2.epsilon());
+                        actorX = getActorX.get();
+                        actorO = getActorO.get();
+                        runTrainingGames(getActorX, getActorO, trainingRunsCount);
                         break;
                     }
                     case HUMAN_VS_NN: {
@@ -152,11 +157,12 @@ public class GameGUI {
                         break;
                     }
                     case NN_VS_ALGORITHM: {
-                        actorX = new NNActor(PLAYER.X, nnProvider.apply(0), fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
-                        DFSActor dfsActor = new DFSActor(PLAYER.O);
-                        dfsActor.setStrength(dfsStrength);
-                        actorO = dfsActor;
-                        runTrainingGames(actorX, actorO, trainingRunsCount);
+                        FFN netX = nnProvider.apply(0);
+                        Supplier<Actor> getActorX = () -> new NNActor(PLAYER.X, netX, fParams1.trainer(), fParams1.alpha(), fParams1.gamma(), fParams1.epsilon());
+                        actorX = getActorX.get();
+                        Supplier<Actor> getActorO = () -> new DFSActor(PLAYER.O, dfsStrength);
+                        actorO = getActorO.get();
+                        runTrainingGames(getActorX, getActorO, trainingRunsCount);
                         break;
                     }
                     case HUMAN_VS_ALGORITHM: {
@@ -167,15 +173,11 @@ public class GameGUI {
                         switch (humanPlayerSymbol) {
                             case X: {
                                 actorX = guiActor = new GUIActor(PLAYER.X, this::moveEvent, this::chooseBoardEvent);
-                                DFSActor dfsActor = new DFSActor(PLAYER.O);
-                                dfsActor.setStrength(dfsStrength);
-                                actorO = dfsActor;
+                                actorO = new DFSActor(PLAYER.O, dfsStrength);
                                 break;
                             }
                             case O: {
-                                DFSActor dfsActor = new DFSActor(PLAYER.X);
-                                dfsActor.setStrength(dfsStrength);
-                                actorX = dfsActor;
+                                actorX = new DFSActor(PLAYER.X, dfsStrength);
                                 actorO = guiActor = new GUIActor(PLAYER.O, this::moveEvent, this::chooseBoardEvent);
                                 break;
                             }
@@ -230,23 +232,23 @@ public class GameGUI {
         return pane;
     }
 
-    private void runTrainingGames(Actor actorX, Actor actorO, int count) {
-        if (actorX == null)
-            throw new IllegalArgumentException("NN 1 must be provided for NN_VS_NN mode.");
-        if (actorO == null)
-            throw new IllegalArgumentException("NN 2 must be provided for NN_VS_NN mode.");
+    private void runTrainingGames(Supplier<Actor> getActorX, Supplier<Actor> getActorO, int count) {
+        if (getActorX == null || getActorO == null)
+            throw new RuntimeException("Actor providers cannot be null.");
 
         for (int i = 0; i < count; i++) {
             if (Math.random() > 0.5) {
-                Actor tmp = actorX;
-                actorX = actorO;
-                actorO = tmp;
+                Supplier<Actor> tmp = getActorX;
+                getActorX = getActorO;
+                getActorO = tmp;
             }
+            Actor actorX = getActorX.get();
+            Actor actorO = getActorO.get();
             Game game = new Game(actorX, actorO);
             if (actorX instanceof NNActor)
-                game.addObserver(((NNActor)actorX)::eventHandler);
+                game.addObserver(((NNActor) actorX)::eventHandler);
             if (actorO instanceof NNActor)
-                game.addObserver(((NNActor)actorO)::eventHandler);
+                game.addObserver(((NNActor) actorO)::eventHandler);
             game.run();
         }
     }

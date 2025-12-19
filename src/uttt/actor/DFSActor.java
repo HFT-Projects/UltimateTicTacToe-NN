@@ -8,25 +8,19 @@ import java.util.Optional;
 
 public class DFSActor extends Actor {
     private final DFS algo;
-    private int strength = 1;
+    private final int strength;
 
-    /**
-     * Set strength of this player.
-     * @param multiplier multiplies strength & calculation duration
-     */
-    public void setStrength(int multiplier) {
-        this.strength = multiplier;
-        algo.maxEndStates = 100 * strength;
-    }
-
-    public DFSActor(PLAYER player) {
+    public DFSActor(PLAYER player, int strength) {
+        this.strength = strength;
         super(player);
         algo = new DFS();
-        this.setStrength(1);
+        algo.maxEndStates = 100 * strength;
     }
 
     @Override
     public int move(PLAYER[][] state, int localBoardSel, int[] playableActions) {
+        algo.maxEndStates = 100 * strength;
+
         Map<Integer, Double> scorePerSelection = new HashMap<>();
         PLAYER[] l = state[localBoardSel];
         for (int action : playableActions) {
@@ -76,8 +70,6 @@ public class DFSActor extends Actor {
         Optional<Map.Entry<Integer, Double>> chosenBoard = scorePerBoard.entrySet().stream().max(Map.Entry.comparingByValue());
         if (chosenBoard.isEmpty())
             throw new RuntimeException("Could not calculate win chance!");
-
-        algo.maxEndStates = 100 * strength;
 
         return chosenBoard.get().getKey();
     }
