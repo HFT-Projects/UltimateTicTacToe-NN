@@ -162,7 +162,9 @@ public class NNActor extends Actor {
         double[] stateDouble = new double[9 * 9 * 2];
         for (int i = 0; i < 9; i++) {
             for (int k = 0; k < 9; k++) {
-                int idx1 = i * 9 * 2 + 2 * k;
+                // one-hot encoding for each cell
+                // 2 bit per cell: [1,0] = YOU, [0,1] = ENEMY, [0,0] = NOT_SET
+                int idx1 = (i * 9 + k) * 2;
                 int idx2 = idx1 + 1;
                 if (state[i][k] == CELL_STATE.YOU) {
                     stateDouble[idx1] = 1;
