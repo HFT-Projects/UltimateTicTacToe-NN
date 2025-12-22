@@ -3,6 +3,7 @@ package gui.tabs;
 import gui.MainWindow;
 import gui.game.GameGUI;
 import gui.game.NNNotProvidedException;
+import gui.game.UncheckedInterruptedException;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -81,9 +82,11 @@ public class GameTab extends Tab {
     private Button loadGameBtn;
     private Button firstBtn, prevBtn, nextBtn, lastBtn, runBtn, saveBtn, resetBtn;
 
+    private Thread gameThread = null;
     private final Preferences prefs;
     private final Function<Integer, FFN> nnProvider;
     private final Function<Integer, NNTab.NNParameters> nnParamsProvider;
+    private boolean stopFlag = false;
 
     public GameTab(MainWindow mainWindow, Preferences prefs, Function<Integer, FFN> nnProvider, Function<Integer, NNTab.NNParameters> nnParamsProvider) {
         this.mainWindow = mainWindow;
@@ -407,11 +410,18 @@ public class GameTab extends Tab {
         trainingProgressBar.setVisible(true);
 
         // Start game thread
-        Thread gameThread = new Thread(() -> {
-            if (epochCount > 0)
-                runTrainingGames(getActor1, getActor2, epochCount, swapActors);
+        if (gameThread != null)
+            throw new RuntimeException("Game thread is already running.");
+        gameThread = new Thread(() -> {
+            try {
+                if (epochCount > 0)
+                    runTrainingGames(getActor1, getActor2, epochCount, swapActors);
 
-            game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
+                game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
+            } catch (UncheckedInterruptedException _) {
+            } finally {
+                stopFlag = false;
+            }
         });
         gameThread.setDaemon(true);
         gameThread.start();
@@ -435,7 +445,16 @@ public class GameTab extends Tab {
         Actor actor2 = (humanPlayer == PLAYER.X) ? nnActor : humanActor;
 
         // Start game thread
-        Thread gameThread = new Thread(() -> game.run(actor1, actor2, humanActor, this::gameFinishedEvent));
+        if (gameThread != null)
+            throw new RuntimeException("Game thread is already running.");
+        gameThread = new Thread(() -> {
+            try {
+                game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+            } catch (UncheckedInterruptedException _) {
+            } finally {
+                stopFlag = false;
+            }
+        });
         gameThread.setDaemon(true);
         gameThread.start();
     }
@@ -464,12 +483,18 @@ public class GameTab extends Tab {
         trainingProgressBar.setVisible(true);
 
         // Start game thread
-        @SuppressWarnings("DuplicatedCode")
-        Thread gameThread = new Thread(() -> {
-            if (epochCount > 0)
-                runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
+        if (gameThread != null)
+            throw new RuntimeException("Game thread is already running.");
+        gameThread = new Thread(() -> {
+            try {
+                if (epochCount > 0)
+                    runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
 
-            game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
+                game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
+            } catch (UncheckedInterruptedException _) {
+            } finally {
+                stopFlag = false;
+            }
         });
         gameThread.setDaemon(true);
         gameThread.start();
@@ -491,7 +516,16 @@ public class GameTab extends Tab {
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
         // Start game thread
-        Thread gameThread = new Thread(() -> game.run(actor1, actor2, humanActor, this::gameFinishedEvent));
+        if (gameThread != null)
+            throw new RuntimeException("Game thread is already running.");
+        gameThread = new Thread(() -> {
+            try {
+                game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+            } catch (UncheckedInterruptedException _) {
+            } finally {
+                stopFlag = false;
+            }
+        });
         gameThread.setDaemon(true);
         gameThread.start();
     }
@@ -517,6 +551,9 @@ public class GameTab extends Tab {
             throw new RuntimeException("Actor providers cannot be null.");
 
         for (int i = 0; i < count; i++) {
+            if (stopFlag)
+                throw new UncheckedInterruptedException();
+
             final int finalI = i;
             Platform.runLater(() -> {
                 trainingProgressBar.setProgress((double) finalI / count);
@@ -606,13 +643,30 @@ public class GameTab extends Tab {
     }
 
     private void resetBoard() {
+        stopFlag = true;
         game.stop();
+
+        try {
+            if (gameThread != null)
+                gameThread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        stopFlag = false;
+
+        gameThread = null;
         game = new GameGUI();
         root.setCenter(game.getPane());
-        trainingProgressBar.setVisible(false);
-        trainingProgressBar.setProgress(0);
-        trainingProgressLabel.setText("");
-        trainingPercentLabel.setText("");
+
+        // use Platform.runLater to avoid JavaFX threading issues
+        Platform.runLater(() -> {
+            trainingProgressBar.setVisible(false);
+            trainingProgressBar.setProgress(0);
+            trainingProgressLabel.setText("");
+            trainingPercentLabel.setText("");
+        });
+
         updateNavButtons();
         enableStartGameControls();
     }

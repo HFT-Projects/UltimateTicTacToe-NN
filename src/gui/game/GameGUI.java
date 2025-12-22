@@ -78,15 +78,11 @@ public class GameGUI {
         else
             GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("Game running..."));
 
-        try {
-            // run the game loop
-            ENDED_STATUS result = game.run();
+        // run the game loop
+        ENDED_STATUS result = game.run();
 
-            GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
-            onComplete.run();
-        } catch (UncheckedInterruptedException _) {
-        }
-
+        GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
+        onComplete.run();
     }
 
     // GUI API: return the node to embed in a parent layout
