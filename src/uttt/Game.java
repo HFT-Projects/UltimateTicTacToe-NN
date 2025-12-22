@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import helper.Stats;
 import uttt.actor.Actor;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
@@ -16,9 +15,6 @@ import uttt.observer.Observer;
 import uttt.observer.Event;
 
 public class Game {
-    @SuppressWarnings("FieldCanBeLocal")
-    private final boolean DEBUG_PRINT_EACH_MOVE = false;
-
     private final GlobalBoard globalBoard = new GlobalBoard();
     private final Actor actorX;
     private final Actor actorO;
@@ -59,8 +55,6 @@ public class Game {
             }
         }
 
-        System.out.println(Stats.boardToString(globalBoard));
-
         return globalBoard.calculateEndedStatus();
     }
 
@@ -80,12 +74,6 @@ public class Game {
 
         ENDED_STATUS endedStatus = globalBoard.calculateEndedStatus();
         notifyObservers(actor, localBoard.getIdx(), action, state, globalBoard.getState(), endedStatus, localBoard.calculateEndedStatus());
-
-        // LOGGING
-        if (DEBUG_PRINT_EACH_MOVE) {
-            String out = Stats.boardToString(globalBoard, localBoard.getIdx(), action);
-            System.out.println(out);
-        }
 
         return action;
     }

@@ -4,6 +4,7 @@ import nn.activation.*;
 import nn.loss.*;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
+import uttt.board.GlobalBoard;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -114,5 +115,40 @@ public final class Utils {
         if (!useDecay) return epsilon;
         double decayRate = 1d / (1d / 10 * epsilon);
         return epsilon / (1 + decayRate * ep);
+    }
+
+    public static String boardToString(GlobalBoard board) {
+        return boardToString(board, -1, -1);
+    }
+
+    public static String boardToString(GlobalBoard board, int globalCellIndex, int localCellIndex) {
+        StringBuilder out = new StringBuilder();
+        // Mapping: X -> 'X', O -> 'O', NOT_SET -> '.'
+        for (int bigRow = 0; bigRow < 3; bigRow++) {
+            for (int innerRow = 0; innerRow < 3; innerRow++) {
+                StringBuilder line = new StringBuilder();
+                for (int bigCol = 0; bigCol < 3; bigCol++) {
+                    int subIndex = bigRow * 3 + bigCol; // 0..8 small boards
+                    for (int innerCol = 0; innerCol < 3; innerCol++) {
+                        int cellIndex = innerRow * 3 + innerCol; // 0..8 inside small board
+                        PLAYER cell = board.getCell(subIndex).getCell(cellIndex);
+                        String ch = (cell == PLAYER.X) ? "x"
+                                : (cell == PLAYER.O) ? "o" : ".";
+                        if (subIndex == globalCellIndex && cellIndex == localCellIndex)
+                            ch = (cell == PLAYER.X) ? "✖"
+                                    : (cell == PLAYER.O) ? "◯" : ".";
+                        line.append(ch);
+                        if (innerCol < 2) line.append(' ');
+                    }
+                    if (bigCol < 2) line.append("  |  ");
+                }
+                out.append(line).append('\n');
+            }
+            if (bigRow < 2) {
+                out.append("-------+---------+-------").append('\n');
+            }
+        }
+        out.append('\n');
+        return out.toString();
     }
 }
