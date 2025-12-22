@@ -6,7 +6,6 @@ import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
 
 import java.util.Arrays;
-import java.lang.reflect.Array;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,5 +103,16 @@ public final class Utils {
 
     public static ENDED_STATUS localEnded(PLAYER[] state) {
         return ended(state, PLAYER_TO_ENDED_STATUS::get);
+    }
+
+    public static double calculateAlpha(boolean useDecay, double alpha, int episodes, int ep) {
+        if (!useDecay) return alpha;
+        return (-1 * Math.pow((1d / episodes * ep), 4) + 1) * alpha;
+    }
+
+    public static double calculateEpsilon(boolean useDecay, double epsilon, int ep) {
+        if (!useDecay) return epsilon;
+        double decayRate = 1d / (1d / 10 * epsilon);
+        return epsilon / (1 + decayRate * ep);
     }
 }

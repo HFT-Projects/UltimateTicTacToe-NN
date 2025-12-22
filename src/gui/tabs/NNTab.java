@@ -5,12 +5,7 @@ import helper.Utils;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.SplitPane;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -42,8 +37,10 @@ public class NNTab extends Tab {
         private final Button btnExport;
         private final Button btnDelete;
         private final TextField tfAlpha;
+        private final CheckBox cbAlphaDecay;
         private final TextField tfGamma;
         private final TextField tfEpsilon;
+        private final CheckBox cbEpsilonDecay;
         private final ComboBox<String> cbTrainer;
         private final TextField tfBatchSize;
 
@@ -170,12 +167,14 @@ public class NNTab extends Tab {
 
             Label lblAlpha = new Label("Learning rate (alpha):");
             tfAlpha = new TextField();
+            cbAlphaDecay = new CheckBox("Decay Alpha over time");
 
             Label lblGamma = new Label("Discount factor (gamma):");
             tfGamma = new TextField();
 
             Label lblEpsilon = new Label("Exploration rate (epsilon):");
             tfEpsilon = new TextField();
+            cbEpsilonDecay = new CheckBox("Decay Epsilon over time");
 
             Label lblTrainer = new Label("Trainer:");
             cbTrainer = new ComboBox<>();
@@ -202,9 +201,9 @@ public class NNTab extends Tab {
                     lblError,
                     lblSummary,
                     buttonRow,
-                    lblAlpha, tfAlpha,
+                    lblAlpha, tfAlpha, cbAlphaDecay,
                     lblGamma, tfGamma,
-                    lblEpsilon, tfEpsilon,
+                    lblEpsilon, tfEpsilon, cbEpsilonDecay,
                     lblTrainer, cbTrainer,
                     lblBatchSize, tfBatchSize
             );
@@ -217,8 +216,10 @@ public class NNTab extends Tab {
             cbAct.setValue(prefs.get("activation", Utils.activationToName.get(new SigmoidFunction())));
             cbLoss.setValue(prefs.get("loss", Utils.lossToName.get(new MeanSquaredError())));
             tfAlpha.setText(prefs.get("alpha", "0.09"));
+            cbAlphaDecay.setSelected(prefs.get("alpha_decay", "false").equals("true"));
             tfGamma.setText(prefs.get("gamma", "0.9"));
             tfEpsilon.setText(prefs.get("epsilon", "0.2"));
+            cbEpsilonDecay.setSelected(prefs.get("epsilon_decay", "false").equals("true"));
             cbTrainer.setValue(prefs.get("trainer", cbTrainer.getItems().getFirst()));
             tfBatchSize.setText(prefs.get("batch_size", "32"));
         }
@@ -262,10 +263,13 @@ public class NNTab extends Tab {
         public NNParameters getNNParameters(FFN net) {
             double alpha, gamma, epsilon;
             FFNTrainer trainer;
+            boolean alphaDecay, epsilonDecay;
             try {
                 alpha = Double.parseDouble(tfAlpha.getText().trim().replace(",", "."));
+                alphaDecay = cbAlphaDecay.isSelected();
                 gamma = Double.parseDouble(tfGamma.getText().trim().replace(",", "."));
                 epsilon = Double.parseDouble(tfEpsilon.getText().trim().replace(",", "."));
+                epsilonDecay = cbEpsilonDecay.isSelected();
                 switch (cbTrainer.getValue()) {
                     case "Stochastic Gradient Descent" -> trainer = new FFNTrainerSGD();
                     case "Mini Batch" -> {
@@ -280,12 +284,14 @@ public class NNTab extends Tab {
             }
 
             prefs.put("alpha", Double.toString(alpha));
+            prefs.put("alpha_decay", Boolean.toString(alphaDecay));
             prefs.put("gamma", Double.toString(gamma));
             prefs.put("epsilon", Double.toString(epsilon));
+            prefs.put("epsilon_decay", Boolean.toString(epsilonDecay));
             prefs.put("trainer", cbTrainer.getValue());
 
 
-            return new NNParameters(alpha, gamma, epsilon, trainer);
+            return new NNParameters(alpha, gamma, epsilon, alphaDecay, epsilonDecay, trainer);
         }
     }
 
@@ -337,7 +343,8 @@ public class NNTab extends Tab {
         return nnPanels[idx].getNet();
     }
 
-    public record NNParameters(double alpha, double gamma, double epsilon, FFNTrainer trainer) {
+    public record NNParameters(double alpha, double gamma, double epsilon, boolean alphaDecay, boolean epsilonDecay,
+                               FFNTrainer trainer) {
     }
 
     public NNParameters getNNParameters(int idx) {

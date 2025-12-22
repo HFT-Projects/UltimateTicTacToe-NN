@@ -4,6 +4,7 @@ import gui.MainWindow;
 import gui.game.GameGUI;
 import gui.game.NNNotProvidedException;
 import gui.game.UncheckedInterruptedException;
+import helper.Utils;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -23,6 +24,7 @@ import uttt.actor.*;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.prefs.Preferences;
 
@@ -396,12 +398,12 @@ public class GameTab extends Tab {
         NNTab.NNParameters params1 = nnParamsProvider.apply(0);
         NNTab.NNParameters params2 = nnParamsProvider.apply(1);
 
-        Function<PLAYER, NNActor> getActor1 = p -> new NNActor(p, nn1, params1.trainer(), params1.alpha(), params1.gamma(), params1.epsilon());
-        Function<PLAYER, NNActor> getActor2 = p -> new NNActor(p, nn2, params2.trainer(), params2.alpha(), params2.gamma(), params2.epsilon());
+        int epochCount = getEpochCount();
+
+        BiFunction<PLAYER, Integer, NNActor> getActor1 = (p, ep) -> new NNActor(p, nn1, params1.trainer(), Utils.calculateAlpha(params1.alphaDecay(), params1.alpha(), epochCount, ep), params1.gamma(), Utils.calculateEpsilon(params1.epsilonDecay(), params1.epsilon(), ep));
+        BiFunction<PLAYER, Integer, NNActor> getActor2 = (p, ep) -> new NNActor(p, nn2, params2.trainer(), Utils.calculateAlpha(params2.alphaDecay(), params2.alpha(), epochCount, ep), params2.gamma(), Utils.calculateEpsilon(params2.epsilonDecay(), params2.epsilon(), ep));
 
         boolean swapActors = cbSwapActors.isSelected();
-
-        int epochCount = getEpochCount();
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
@@ -417,7 +419,7 @@ public class GameTab extends Tab {
                 if (epochCount > 0)
                     runTrainingGames(getActor1, getActor2, epochCount, swapActors);
 
-                game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
+                game.run(getActor1.apply(PLAYER.X, epochCount), getActor2.apply(PLAYER.O, epochCount), null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -468,12 +470,12 @@ public class GameTab extends Tab {
         NNTab.NNParameters params = nnParamsProvider.apply(0);
         int dfsStrength = (int) dfsStrengthSlider.getValue();
 
-        Function<PLAYER, NNActor> getNNActor = p -> new NNActor(p, nn, params.trainer(), params.alpha(), params.gamma(), params.epsilon());
-        Function<PLAYER, DFSActor> getDFSActor = p -> new DFSActor(p, dfsStrength);
+        int epochCount = getEpochCount();
+
+        BiFunction<PLAYER, Integer, NNActor> getNNActor = (p, ep) -> new NNActor(p, nn, params.trainer(), Utils.calculateAlpha(params.alphaDecay(), params.alpha(), epochCount, ep), params.gamma(), Utils.calculateEpsilon(params.epsilonDecay(), params.epsilon(), ep));
+        BiFunction<PLAYER, Integer, DFSActor> getDFSActor = (p, _) -> new DFSActor(p, dfsStrength);
 
         boolean swapActors = cbSwapActors.isSelected();
-
-        int epochCount = getEpochCount();
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
@@ -490,7 +492,7 @@ public class GameTab extends Tab {
                 if (epochCount > 0)
                     runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
 
-                game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
+                game.run(getNNActor.apply(PLAYER.X, epochCount), getDFSActor.apply(PLAYER.O, epochCount), null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -546,7 +548,7 @@ public class GameTab extends Tab {
         alert.showAndWait();
     }
 
-    private void runTrainingGames(Function<PLAYER, ? extends Actor> getActor1, Function<PLAYER, ? extends Actor> getActor2, int count, boolean swapBetweenEpochs) {
+    private void runTrainingGames(BiFunction<PLAYER, Integer, ? extends Actor> getActor1, BiFunction<PLAYER, Integer, ? extends Actor> getActor2, int count, boolean swapBetweenEpochs) {
         if (getActor1 == null || getActor2 == null)
             throw new RuntimeException("Actor providers cannot be null.");
 
@@ -563,12 +565,12 @@ public class GameTab extends Tab {
             });
 
             if (swapBetweenEpochs && Math.random() > 0.5) {
-                Function<PLAYER, ? extends Actor> tmp = getActor1;
+                BiFunction<PLAYER, Integer, ? extends Actor> tmp = getActor1;
                 getActor1 = getActor2;
                 getActor2 = tmp;
             }
-            Actor actorX = getActor1.apply(PLAYER.X);
-            Actor actorO = getActor2.apply(PLAYER.O);
+            Actor actorX = getActor1.apply(PLAYER.X, i);
+            Actor actorO = getActor2.apply(PLAYER.O, i);
             Game game = new Game(actorX, actorO);
             if (actorX instanceof NNActor)
                 game.addObserver(((NNActor) actorX)::eventHandler);
