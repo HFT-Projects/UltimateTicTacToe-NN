@@ -97,6 +97,9 @@ public class GameTab extends Tab {
         root.setCenter(game.getPane());
         root.setBottom(createControlPanel());
 
+        // needs to be initialized after creation of control panel
+        cbMode.getSelectionModel().selectFirst();
+
         // Load saved mode from preferences
         String savedMode = prefs.get("game_mode", "nn_vs_nn");
         if (!cbMode.getItems().contains(savedMode))
@@ -140,7 +143,6 @@ public class GameTab extends Tab {
         cbMode = new ComboBox<>();
         cbMode.getItems().add(VIEW_MODE);
         cbMode.getItems().addAll(strToMode.keySet());
-        cbMode.getSelectionModel().selectFirst();
 
         loadGameBtn = new Button("Load Game");
         loadGameBtn.setVisible(false);
