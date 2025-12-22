@@ -61,35 +61,32 @@ public class GameGUI {
 
         this.guiActor = guiActor;
 
-        Thread gameThread = new Thread(() -> {
-            try {
-                uttt.Game game = new uttt.Game(actorX, actorO);
-                if (actorX instanceof NNActor)
-                    game.addObserver(((NNActor) actorX)::eventHandler);
-                if (actorO instanceof NNActor)
-                    game.addObserver(((NNActor) actorO)::eventHandler);
+        uttt.Game game = new uttt.Game(actorX, actorO);
+        if (actorX instanceof NNActor)
+            game.addObserver(((NNActor) actorX)::eventHandler);
+        if (actorO instanceof NNActor)
+            game.addObserver(((NNActor) actorO)::eventHandler);
 
-                game.addObserver(e -> {
-                    moveHistoryGenerator.handleEvent(e);
-                    if (guiActor != null)
-                        Platform.runLater(this::goToEnd);
-                });
-
-                if (guiActor != null)
-                    GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Game running..."));
-                else
-                    GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("Game running..."));
-
-                // run the game loop
-                ENDED_STATUS result = game.run();
-
-                GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
-                onComplete.run();
-            } catch (UncheckedInterruptedException _) {
-            }
+        game.addObserver(e -> {
+            moveHistoryGenerator.handleEvent(e);
+            if (guiActor != null)
+                Platform.runLater(this::goToEnd);
         });
-        gameThread.setDaemon(true);
-        gameThread.start();
+
+        if (guiActor != null)
+            GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Game running..."));
+        else
+            GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("Game running..."));
+
+        try {
+            // run the game loop
+            ENDED_STATUS result = game.run();
+
+            GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
+            onComplete.run();
+        } catch (UncheckedInterruptedException _) {
+        }
+
     }
 
     // GUI API: return the node to embed in a parent layout

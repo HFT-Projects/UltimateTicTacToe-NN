@@ -3,6 +3,7 @@ package gui.tabs;
 import gui.MainWindow;
 import gui.game.GameGUI;
 import gui.game.NNNotProvidedException;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -73,6 +74,10 @@ public class GameTab extends Tab {
     private TextField epochTf;
     private CheckBox cbSwapActors;
     private Slider dfsStrengthSlider;
+    private ProgressBar trainingProgressBar;
+    private Label trainingProgressLabel;
+    private Label trainingPercentLabel;
+    private HBox trainingProgressBox;
     private Button loadGameBtn;
     private Button firstBtn, prevBtn, nextBtn, lastBtn, runBtn, saveBtn, resetBtn;
 
@@ -206,6 +211,7 @@ public class GameTab extends Tab {
             boolean nnMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
             boolean humanMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_NN)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
             boolean algoMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
+            boolean trainingMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN));
 
             runBtn.setDisable(viewMode);
 
@@ -220,6 +226,9 @@ public class GameTab extends Tab {
 
             dfsSettingsBox.setVisible(algoMode);
             dfsSettingsBox.setManaged(algoMode);
+
+            trainingProgressBox.setVisible(trainingMode);
+            trainingProgressBox.setManaged(trainingMode);
 
             // update slider max
             if (newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM))) {
@@ -237,6 +246,22 @@ public class GameTab extends Tab {
         VBox controls = new VBox(10);
         controls.setAlignment(Pos.CENTER);
         controls.setPadding(new Insets(20, 0, 0, 0));
+
+        trainingProgressBar = new ProgressBar(0);
+        trainingProgressBar.setPrefWidth(300);
+        trainingProgressBar.setVisible(false);
+
+        trainingProgressLabel = new Label("");
+        trainingPercentLabel = new Label("");
+        trainingProgressLabel.setStyle("-fx-text-fill: white; -fx-font-family: monospace;");
+        trainingPercentLabel.setStyle("-fx-text-fill: white; -fx-font-family: monospace;");
+
+        trainingProgressBox = new HBox(8, trainingProgressBar, trainingProgressLabel, trainingPercentLabel);
+        trainingProgressBox.setAlignment(Pos.CENTER);
+        trainingProgressBox.setVisible(false);
+        trainingProgressBox.setManaged(false);
+
+        controls.getChildren().add(trainingProgressBox);
 
         HBox navButtons = new HBox(10);
         navButtons.setAlignment(Pos.CENTER);
@@ -374,14 +399,22 @@ public class GameTab extends Tab {
         boolean swapActors = cbSwapActors.isSelected();
 
         int epochCount = getEpochCount();
-        if (epochCount > 0)
-            runTrainingGames(getActor1, getActor2, epochCount, swapActors);
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
         prefs.put("nn_swap_nets_between_epochs", Boolean.toString(swapActors));
 
-        game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
+        trainingProgressBar.setVisible(true);
+
+        // Start game thread
+        Thread gameThread = new Thread(() -> {
+            if (epochCount > 0)
+                runTrainingGames(getActor1, getActor2, epochCount, swapActors);
+
+            game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
+        });
+        gameThread.setDaemon(true);
+        gameThread.start();
     }
 
     private void runHumanVsNNGame() throws NNNotProvidedException {
@@ -401,7 +434,10 @@ public class GameTab extends Tab {
         Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : nnActor;
         Actor actor2 = (humanPlayer == PLAYER.X) ? nnActor : humanActor;
 
-        game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+        // Start game thread
+        Thread gameThread = new Thread(() -> game.run(actor1, actor2, humanActor, this::gameFinishedEvent));
+        gameThread.setDaemon(true);
+        gameThread.start();
     }
 
     private void runNNvsAlgoGame() throws NNNotProvidedException, ExcHandled {
@@ -419,15 +455,24 @@ public class GameTab extends Tab {
         boolean swapActors = cbSwapActors.isSelected();
 
         int epochCount = getEpochCount();
-        if (epochCount > 0)
-            runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
         prefs.put("nn_swap_nets_between_epochs", Boolean.toString(swapActors));
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
-        game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
+        trainingProgressBar.setVisible(true);
+
+        // Start game thread
+        @SuppressWarnings("DuplicatedCode")
+        Thread gameThread = new Thread(() -> {
+            if (epochCount > 0)
+                runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
+
+            game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
+        });
+        gameThread.setDaemon(true);
+        gameThread.start();
     }
 
     private void runHumanVsAlgoGame() throws NNNotProvidedException {
@@ -445,7 +490,10 @@ public class GameTab extends Tab {
         // Save to preferences
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
-        game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+        // Start game thread
+        Thread gameThread = new Thread(() -> game.run(actor1, actor2, humanActor, this::gameFinishedEvent));
+        gameThread.setDaemon(true);
+        gameThread.start();
     }
 
     private void showNNNotProvidedAlert() {
@@ -469,6 +517,14 @@ public class GameTab extends Tab {
             throw new RuntimeException("Actor providers cannot be null.");
 
         for (int i = 0; i < count; i++) {
+            final int finalI = i;
+            Platform.runLater(() -> {
+                trainingProgressBar.setProgress((double) finalI / count);
+                int trainingProgressSize = Integer.toString(count).length();
+                trainingProgressLabel.setText("Epoch " + String.format("%" + trainingProgressSize + "d", finalI) + "/" + count);
+                trainingPercentLabel.setText(String.format("%6.2f%%", ((double) finalI / count) * 100));
+            });
+
             if (swapBetweenEpochs && Math.random() > 0.5) {
                 Function<PLAYER, ? extends Actor> tmp = getActor1;
                 getActor1 = getActor2;
@@ -483,6 +539,12 @@ public class GameTab extends Tab {
                 game.addObserver(((NNActor) actorO)::eventHandler);
             game.run();
         }
+
+        Platform.runLater(() -> {
+            trainingProgressBar.setProgress(1);
+            trainingProgressLabel.setText("Epoch " + count + "/" + count);
+            trainingPercentLabel.setText("100,00%");
+        });
     }
 
     private void gameFinishedEvent() {
@@ -547,6 +609,10 @@ public class GameTab extends Tab {
         game.stop();
         game = new GameGUI();
         root.setCenter(game.getPane());
+        trainingProgressBar.setVisible(false);
+        trainingProgressBar.setProgress(0);
+        trainingProgressLabel.setText("");
+        trainingPercentLabel.setText("");
         updateNavButtons();
         enableStartGameControls();
     }
