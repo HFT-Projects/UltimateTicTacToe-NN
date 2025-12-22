@@ -71,6 +71,7 @@ public class GameTab extends Tab {
     private HBox playerSelectionBox;
     private HBox dfsSettingsBox;
     private TextField epochTf;
+    private CheckBox cbSwapActors;
     private Slider dfsStrengthSlider;
     private Button loadGameBtn;
     private Button firstBtn, prevBtn, nextBtn, lastBtn, runBtn, saveBtn, resetBtn;
@@ -162,7 +163,11 @@ public class GameTab extends Tab {
         epochTf = new TextField("Epoch Count");
         epochTf.setText(prefs.get("nn_training_epoch_count", "1000"));
 
-        nnSettingsBox = new HBox(8, epochLb, epochTf);
+        cbSwapActors = new CheckBox("Swap actors randomly between epochs");
+        cbSwapActors.setStyle("-fx-text-fill: white");
+        cbSwapActors.setSelected(Boolean.parseBoolean(prefs.get("nn_swap_nets_between_epochs", "true")));
+
+        nnSettingsBox = new HBox(8, epochLb, epochTf, cbSwapActors);
         nnSettingsBox.setAlignment(Pos.CENTER);
         nnSettingsBox.setVisible(false);
         nnSettingsBox.setManaged(false);
@@ -366,12 +371,15 @@ public class GameTab extends Tab {
         Function<PLAYER, NNActor> getActor1 = p -> new NNActor(p, nn1, params1.trainer(), params1.alpha(), params1.gamma(), params1.epsilon());
         Function<PLAYER, NNActor> getActor2 = p -> new NNActor(p, nn2, params2.trainer(), params2.alpha(), params2.gamma(), params2.epsilon());
 
+        boolean swapActors = cbSwapActors.isSelected();
+
         int epochCount = getEpochCount();
         if (epochCount > 0)
-            runTrainingGames(getActor1, getActor2, epochCount);
+            runTrainingGames(getActor1, getActor2, epochCount, swapActors);
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
+        prefs.put("nn_swap_nets_between_epochs", Boolean.toString(swapActors));
 
         game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
     }
@@ -408,12 +416,15 @@ public class GameTab extends Tab {
         Function<PLAYER, NNActor> getNNActor = p -> new NNActor(p, nn, params.trainer(), params.alpha(), params.gamma(), params.epsilon());
         Function<PLAYER, DFSActor> getDFSActor = p -> new DFSActor(p, dfsStrength);
 
+        boolean swapActors = cbSwapActors.isSelected();
+
         int epochCount = getEpochCount();
         if (epochCount > 0)
-            runTrainingGames(getNNActor, getDFSActor, epochCount);
+            runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
 
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
+        prefs.put("nn_swap_nets_between_epochs", Boolean.toString(swapActors));
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
         game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
@@ -453,12 +464,12 @@ public class GameTab extends Tab {
         alert.showAndWait();
     }
 
-    private void runTrainingGames(Function<PLAYER, ? extends Actor> getActor1, Function<PLAYER, ? extends Actor> getActor2, int count) {
+    private void runTrainingGames(Function<PLAYER, ? extends Actor> getActor1, Function<PLAYER, ? extends Actor> getActor2, int count, boolean swapBetweenEpochs) {
         if (getActor1 == null || getActor2 == null)
             throw new RuntimeException("Actor providers cannot be null.");
 
         for (int i = 0; i < count; i++) {
-            if (Math.random() > 0.5) {
+            if (swapBetweenEpochs && Math.random() > 0.5) {
                 Function<PLAYER, ? extends Actor> tmp = getActor1;
                 getActor1 = getActor2;
                 getActor2 = tmp;
@@ -491,6 +502,7 @@ public class GameTab extends Tab {
         }
         if (nnMode) {
             epochTf.setDisable(false);
+            cbSwapActors.setDisable(false);
         }
         if (algoMode) {
             dfsStrengthSlider.setDisable(false);
@@ -514,6 +526,7 @@ public class GameTab extends Tab {
         }
         if (nnMode) {
             epochTf.setDisable(true);
+            cbSwapActors.setDisable(true);
         }
         if (algoMode) {
             dfsStrengthSlider.setDisable(true);
