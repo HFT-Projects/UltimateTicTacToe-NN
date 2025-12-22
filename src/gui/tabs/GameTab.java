@@ -15,16 +15,37 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import nn.FFN;
 
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.prefs.Preferences;
 
 public class GameTab extends Tab {
     private GameGUI game;
 
+    private static final String VIEW_MODE = "View Game";
+    private static final Map<GameGUI.GAME_MODE, String> modeToStr;
+    private static final Map<String, GameGUI.GAME_MODE> strToMode;
+
+    static {
+        Map<GameGUI.GAME_MODE, String> tmpModeToStr = new LinkedHashMap<>();
+        tmpModeToStr.put(GameGUI.GAME_MODE.NN_VS_NN, "NN vs NN");
+        tmpModeToStr.put(GameGUI.GAME_MODE.HUMAN_VS_NN, "Human vs NN");
+        tmpModeToStr.put(GameGUI.GAME_MODE.NN_VS_ALGORITHM, "NN vs Algorithm");
+        tmpModeToStr.put(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM, "Human vs Algorithm");
+        modeToStr = Collections.unmodifiableMap(tmpModeToStr);
+
+        Map<String, GameGUI.GAME_MODE> tmpStrToMode = new LinkedHashMap<>();
+        for (Map.Entry<GameGUI.GAME_MODE, String> entry : tmpModeToStr.entrySet()) {
+            tmpStrToMode.put(entry.getValue(), entry.getKey());
+        }
+        strToMode = Collections.unmodifiableMap(tmpStrToMode);
+    }
+
     private final MainWindow mainWindow;
     private final BorderPane root;
-    private ToggleGroup modeGroup;
-    private RadioButton viewGame, nnVsNnRadio, humanVsNnRadio, nnVsAlgoRadio, humanVsAlgoRadio;
+    private ComboBox<String> cbMode;
     private ToggleGroup playerGroup;
     private RadioButton playerXRadio, playerORadio, playerRandomRadio;
     private HBox nnSettingsBox;
@@ -59,20 +80,10 @@ public class GameTab extends Tab {
 
         // Load saved mode from preferences
         String savedMode = prefs.get("game_mode", "nn_vs_nn");
-        switch (savedMode) {
-            case "view_game" -> modeGroup.selectToggle(viewGame);
-            case "human_vs_nn" -> modeGroup.selectToggle(humanVsNnRadio);
-            case "nn_vs_nn" -> modeGroup.selectToggle(nnVsNnRadio);
-            case "human_vs_algo" -> {
-                modeGroup.selectToggle(humanVsAlgoRadio);
-                dfsStrengthSlider.setMax(500);
-            }
-            case "nn_vs_algo" -> {
-                modeGroup.selectToggle(nnVsAlgoRadio);
-                dfsStrengthSlider.setMax(30);
-            }
-            default -> throw new RuntimeException("Unknown saved game mode: " + savedMode);
-        }
+        if (!cbMode.getItems().contains(savedMode))
+            System.out.println("Unknown saved game mode: " + savedMode);
+        else
+            cbMode.setValue(savedMode);
 
         // Load saved human player symbol from preferences
         String savedPlayerSymbol = prefs.get("human_player_symbol", "random");
@@ -109,30 +120,10 @@ public class GameTab extends Tab {
         modeLabel.setTextFill(Color.WHITE);
         modeLabel.setFont(Font.font("Arial", 14));
 
-        modeGroup = new ToggleGroup();
-
-        viewGame = new RadioButton("View Game");
-        viewGame.setToggleGroup(modeGroup);
-        viewGame.setTextFill(Color.WHITE);
-
-        nnVsNnRadio = new RadioButton("NN vs NN");
-        nnVsNnRadio.setToggleGroup(modeGroup);
-        nnVsNnRadio.setTextFill(Color.WHITE);
-
-        humanVsNnRadio = new RadioButton("Human vs NN");
-        humanVsNnRadio.setToggleGroup(modeGroup);
-        humanVsNnRadio.setTextFill(Color.WHITE);
-
-        nnVsAlgoRadio = new RadioButton("NN vs Algorithm");
-        nnVsAlgoRadio.setToggleGroup(modeGroup);
-        nnVsAlgoRadio.setTextFill(Color.WHITE);
-
-        humanVsAlgoRadio = new RadioButton("Human vs Algorithm");
-        humanVsAlgoRadio.setToggleGroup(modeGroup);
-        humanVsAlgoRadio.setTextFill(Color.WHITE);
-
-        HBox modeBox = new HBox(15, modeLabel, viewGame, nnVsNnRadio, nnVsAlgoRadio, humanVsNnRadio, humanVsAlgoRadio);
-        modeBox.setAlignment(Pos.CENTER);
+        cbMode = new ComboBox<>();
+        cbMode.getItems().add(VIEW_MODE);
+        cbMode.getItems().addAll(strToMode.keySet());
+        cbMode.getSelectionModel().selectFirst();
 
         loadGameBtn = new Button("Load Game");
         loadGameBtn.setVisible(false);
@@ -141,7 +132,7 @@ public class GameTab extends Tab {
             String path = mainWindow.selectFile(false);
             if (path == null)
                 return;
-            prefs.put("game_mode", "view_game");
+            prefs.put("game_mode", VIEW_MODE);
             game.load(path);
             updateNavButtons();
             disableStartGameControls();
@@ -161,7 +152,7 @@ public class GameTab extends Tab {
         dfsLb.setStyle("-fx-text-fill: white");
         dfsStrengthSlider = new Slider(1, 500, 1);
         dfsStrengthSlider.setValue(Integer.parseInt(prefs.get("dfs_strength", "1")));
-        Label dfsStrengthLb = new Label(Integer.toString((int)dfsStrengthSlider.getValue()));
+        Label dfsStrengthLb = new Label(Integer.toString((int) dfsStrengthSlider.getValue()));
         dfsStrengthLb.setStyle("-fx-text-fill: white");
         dfsStrengthSlider.valueProperty().addListener((_, _, newVal) -> dfsStrengthLb.setText(Integer.toString(newVal.intValue())));
 
@@ -197,11 +188,11 @@ public class GameTab extends Tab {
         HBox settingsBox = new HBox(8, playerSelectionBox, loadGameBtn, nnSettingsBox, dfsSettingsBox);
         settingsBox.setAlignment(Pos.CENTER);
 
-        modeGroup.selectedToggleProperty().addListener((_, _, newVal) -> {
-            boolean viewMode = newVal == viewGame;
-            boolean nnMode = newVal == nnVsNnRadio || newVal == nnVsAlgoRadio;
-            boolean humanMode = newVal == humanVsNnRadio || newVal == humanVsAlgoRadio;
-            boolean algoMode = newVal == nnVsAlgoRadio || newVal == humanVsAlgoRadio;
+        cbMode.valueProperty().addListener((_, _, newVal) -> {
+            boolean viewMode = newVal.equals(VIEW_MODE);
+            boolean nnMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+            boolean humanMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_NN)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
+            boolean algoMode = newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
 
             runBtn.setDisable(viewMode);
 
@@ -218,14 +209,14 @@ public class GameTab extends Tab {
             dfsSettingsBox.setManaged(algoMode);
 
             // update slider max
-            if (newVal == nnVsAlgoRadio) {
+            if (newVal.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM))) {
                 dfsStrengthSlider.setMax(30);
-            } else if (newVal == humanVsAlgoRadio) {
+            } else if (newVal.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM))) {
                 dfsStrengthSlider.setMax(500);
             }
         });
 
-        modePanel.getChildren().addAll(modeBox, settingsBox);
+        modePanel.getChildren().addAll(cbMode, settingsBox);
         return modePanel;
     }
 
@@ -289,30 +280,13 @@ public class GameTab extends Tab {
     }
 
     private void runGame() {
-        GameGUI.GAME_MODE mode;
-        // Save selected mode to preferences
-        String selectedMode;
-        if (humanVsNnRadio.isSelected()) {
-            selectedMode = "human_vs_nn";
-            mode = GameGUI.GAME_MODE.HUMAN_VS_NN;
-        }
-        else if (humanVsAlgoRadio.isSelected()) {
-            selectedMode = "human_vs_algo";
-            mode = GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM;
-        }
-        else if (nnVsNnRadio.isSelected()) {
-            selectedMode = "nn_vs_nn";
-            mode = GameGUI.GAME_MODE.NN_VS_NN;
-        }
-        else if (nnVsAlgoRadio.isSelected()) {
-            selectedMode = "nn_vs_algo";
-            mode = GameGUI.GAME_MODE.NN_VS_ALGORITHM;
-        }
-        else if (viewGame.isSelected())
-            throw new RuntimeException("Unexpected 'View Game' mode when starting a new game");
-        else
+        GameGUI.GAME_MODE mode = strToMode.get(cbMode.getValue());
+        if (mode == null) {
             throw new RuntimeException("Unknown game mode selected");
-        prefs.put("game_mode", selectedMode);
+        }
+
+        // Save selected mode to preferences
+        prefs.put("game_mode", modeToStr.get(mode));
 
         // Save selected human player symbol to preferences
         String selectedPlayerSymbol;
@@ -357,10 +331,10 @@ public class GameTab extends Tab {
                 humanPlayerSymbol = GameGUI.HUMAN_PLAYER_SYMBOL.RANDOM;
             }
 
-        prefs.put("dfs_strength", Integer.toString((int)dfsStrengthSlider.getValue()));
+        prefs.put("dfs_strength", Integer.toString((int) dfsStrengthSlider.getValue()));
 
         try {
-            game.run(mode, humanPlayerSymbol, epochCount, (int)dfsStrengthSlider.getValue(), this::updateNavButtons);
+            game.run(mode, humanPlayerSymbol, epochCount, (int) dfsStrengthSlider.getValue(), this::updateNavButtons);
         } catch (NNNotProvidedException e) {
             showNNNotProvidedAlert();
             resetBoard();
@@ -387,48 +361,49 @@ public class GameTab extends Tab {
     }
 
     private void enableStartGameControls() {
-        if (modeGroup.getSelectedToggle() == viewGame) {
+        boolean viewMode = cbMode.getValue().equals(VIEW_MODE);
+        boolean nnMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+        boolean algoMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
+
+        if (viewMode) {
             loadGameBtn.setDisable(false);
         } else {
             runBtn.setDisable(false);
             saveBtn.setDisable(true);
         }
-        if (modeGroup.getSelectedToggle() == nnVsNnRadio || modeGroup.getSelectedToggle() == nnVsAlgoRadio) {
+        if (nnMode) {
             epochTf.setDisable(false);
         }
-        if (modeGroup.getSelectedToggle() == nnVsAlgoRadio || modeGroup.getSelectedToggle() == humanVsAlgoRadio) {
+        if (algoMode) {
             dfsStrengthSlider.setDisable(false);
         }
         resetBtn.setDisable(true);
-        viewGame.setDisable(false);
-        nnVsNnRadio.setDisable(false);
-        humanVsNnRadio.setDisable(false);
-        nnVsAlgoRadio.setDisable(false);
-        humanVsAlgoRadio.setDisable(false);
+        cbMode.setDisable(false);
         playerXRadio.setDisable(false);
         playerORadio.setDisable(false);
         playerRandomRadio.setDisable(false);
     }
 
     private void disableStartGameControls() {
-        if (modeGroup.getSelectedToggle() == viewGame) {
+        @SuppressWarnings("DuplicatedCode")
+        boolean viewMode = cbMode.getValue().equals(VIEW_MODE);
+        boolean nnMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+        boolean algoMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
+
+        if (viewMode) {
             loadGameBtn.setDisable(true);
         } else {
             runBtn.setDisable(true);
             saveBtn.setDisable(false);
         }
-        if (modeGroup.getSelectedToggle() == nnVsNnRadio || modeGroup.getSelectedToggle() == nnVsAlgoRadio) {
+        if (nnMode) {
             epochTf.setDisable(true);
         }
-        if (modeGroup.getSelectedToggle() == nnVsAlgoRadio || modeGroup.getSelectedToggle() == humanVsAlgoRadio) {
+        if (algoMode) {
             dfsStrengthSlider.setDisable(true);
         }
         resetBtn.setDisable(false);
-        viewGame.setDisable(true);
-        nnVsNnRadio.setDisable(true);
-        humanVsNnRadio.setDisable(true);
-        nnVsAlgoRadio.setDisable(true);
-        humanVsAlgoRadio.setDisable(true);
+        cbMode.setDisable(true);
         playerXRadio.setDisable(true);
         playerORadio.setDisable(true);
         playerRandomRadio.setDisable(true);
