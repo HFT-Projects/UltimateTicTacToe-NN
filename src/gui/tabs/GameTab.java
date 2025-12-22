@@ -168,10 +168,10 @@ public class GameTab extends Tab {
         Label dfsLb = new Label("Algorithm strength multiplier:");
         dfsLb.setStyle("-fx-text-fill: white");
         dfsStrengthSlider = new Slider(1, 500, 1);
-        dfsStrengthSlider.setValue(Integer.parseInt(prefs.get("dfs_strength", "1")));
-        Label dfsStrengthLb = new Label(Integer.toString((int) dfsStrengthSlider.getValue()));
+        Label dfsStrengthLb = new Label();
         dfsStrengthLb.setStyle("-fx-text-fill: white");
         dfsStrengthSlider.valueProperty().addListener((_, _, newVal) -> dfsStrengthLb.setText(Integer.toString(newVal.intValue())));
+        dfsStrengthSlider.setValue(Integer.parseInt(prefs.get("dfs_strength", "1")));
 
         dfsSettingsBox = new HBox(8, dfsLb, dfsStrengthSlider, dfsStrengthLb);
         dfsSettingsBox.setAlignment(Pos.CENTER);
