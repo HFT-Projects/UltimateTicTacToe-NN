@@ -31,6 +31,11 @@ public class Game {
     public Game(Actor actorX, Actor actorO, Observer[] observers) {
         this.actorX = actorX;
         this.actorO = actorO;
+
+        if (actorX.getPlayer() != PLAYER.X || actorO.getPlayer() != PLAYER.O) {
+            throw new IllegalArgumentException("Actors must be assigned to correct players.");
+        }
+
         this.observers.addAll(Arrays.asList(observers));
     }
 
