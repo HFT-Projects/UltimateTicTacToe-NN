@@ -373,7 +373,7 @@ public class GameTab extends Tab {
         // Save to preferences
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
 
-        game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::updateNavButtons);
+        game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::gameFinishedEvent);
     }
 
     private void runHumanVsNNGame() throws NNNotProvidedException {
@@ -393,7 +393,7 @@ public class GameTab extends Tab {
         Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : nnActor;
         Actor actor2 = (humanPlayer == PLAYER.X) ? nnActor : humanActor;
 
-        game.run(actor1, actor2, humanActor, this::updateNavButtons);
+        game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
     }
 
     private void runNNvsAlgoGame() throws NNNotProvidedException, ExcHandled {
@@ -416,7 +416,7 @@ public class GameTab extends Tab {
         prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
-        game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::updateNavButtons);
+        game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::gameFinishedEvent);
     }
 
     private void runHumanVsAlgoGame() throws NNNotProvidedException {
@@ -434,7 +434,7 @@ public class GameTab extends Tab {
         // Save to preferences
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
 
-        game.run(actor1, actor2, humanActor, this::updateNavButtons);
+        game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
     }
 
     private void showNNNotProvidedAlert() {
@@ -474,6 +474,11 @@ public class GameTab extends Tab {
         }
     }
 
+    private void gameFinishedEvent() {
+        updateNavButtons();
+        saveBtn.setDisable(false);
+    }
+
     private void enableStartGameControls() {
         boolean viewMode = cbMode.getValue().equals(VIEW_MODE);
         boolean nnMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
@@ -483,7 +488,6 @@ public class GameTab extends Tab {
             loadGameBtn.setDisable(false);
         } else {
             runBtn.setDisable(false);
-            saveBtn.setDisable(true);
         }
         if (nnMode) {
             epochTf.setDisable(false);
@@ -491,6 +495,7 @@ public class GameTab extends Tab {
         if (algoMode) {
             dfsStrengthSlider.setDisable(false);
         }
+        saveBtn.setDisable(true);
         resetBtn.setDisable(true);
         cbMode.setDisable(false);
         cbPlayer.setDisable(false);
@@ -506,7 +511,6 @@ public class GameTab extends Tab {
             loadGameBtn.setDisable(true);
         } else {
             runBtn.setDisable(true);
-            saveBtn.setDisable(false);
         }
         if (nnMode) {
             epochTf.setDisable(true);
