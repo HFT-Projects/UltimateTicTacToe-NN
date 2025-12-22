@@ -14,6 +14,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import nn.FFN;
+import org.jspecify.annotations.NonNull;
+import uttt.Game;
+import uttt.actor.*;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -22,7 +25,8 @@ import java.util.function.Function;
 import java.util.prefs.Preferences;
 
 public class GameTab extends Tab {
-    private GameGUI game;
+    private static class ExcHandled extends Exception {
+    }
 
     private static final String VIEW_MODE = "View Game";
     private static final Map<GameGUI.GAME_MODE, String> modeToStr;
@@ -57,6 +61,8 @@ public class GameTab extends Tab {
         strToPlayer = Collections.unmodifiableMap(tmpStrToPlayer);
     }
 
+    private GameGUI game;
+
     private final MainWindow mainWindow;
     private final BorderPane root;
     private ComboBox<String> cbMode;
@@ -81,7 +87,7 @@ public class GameTab extends Tab {
 
         setText("Game");
 
-        game = new GameGUI(nnProvider, nnParamsProvider);
+        game = new GameGUI();
 
         root = new BorderPane();
         root.setPadding(new Insets(20));
@@ -290,45 +296,143 @@ public class GameTab extends Tab {
 
         disableStartGameControls();
 
-        int epochCount = 0;
-        if (mode == GameGUI.GAME_MODE.NN_VS_NN || mode == GameGUI.GAME_MODE.NN_VS_ALGORITHM) {
-            String epoch = epochTf.getText().trim();
-            try {
-                epochCount = Integer.parseInt(epoch);
-                if (epochCount < 1)
-                    throw new NumberFormatException();
-            } catch (NumberFormatException e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Invalid Epoch Count");
-                alert.setHeaderText("Epoch Count Must Be a Positive Integer");
-                alert.setContentText("Please enter a valid positive integer for the epoch count.");
-                alert.showAndWait();
-                resetBoard();
-                return;
-            }
-            prefs.put("nn_training_epoch_count", epoch);
-        }
-
-        GameGUI.HUMAN_PLAYER_SYMBOL humanPlayerSymbol = null;
-        if (mode == GameGUI.GAME_MODE.HUMAN_VS_NN || mode == GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM) {
-            humanPlayerSymbol = strToPlayer.get(cbPlayer.getValue());
-            if (humanPlayerSymbol == null)
-                throw new RuntimeException("Unknown human player symbol selected");
-            // Save selected human player symbol to preferences
-            prefs.put("human_player_symbol", playerToStr.get(humanPlayerSymbol));
-        }
-
-        prefs.put("dfs_strength", Integer.toString((int) dfsStrengthSlider.getValue()));
-
         try {
-            game.run(mode, humanPlayerSymbol, epochCount, (int) dfsStrengthSlider.getValue(), this::updateNavButtons);
+            switch (mode) {
+                case NN_VS_NN -> runNNvsNNGame();
+                case HUMAN_VS_NN -> runHumanVsNNGame();
+                case NN_VS_ALGORITHM -> runNNvsAlgoGame();
+                case HUMAN_VS_ALGORITHM -> runHumanVsAlgoGame();
+                default -> throw new RuntimeException("Unknown game mode: " + mode);
+            }
         } catch (NNNotProvidedException e) {
             showNNNotProvidedAlert();
             resetBoard();
         } catch (InvalidParametersException e) {
             showInvalidParametersAlert();
             resetBoard();
+        } catch (ExcHandled _) {
+            // already handled
+            resetBoard();
         }
+    }
+
+    private int getEpochCount() throws ExcHandled {
+        String epoch = epochTf.getText().trim();
+        try {
+            int epochCount = Integer.parseInt(epoch);
+            if (epochCount < 1)
+                throw new NumberFormatException();
+            return epochCount;
+        } catch (NumberFormatException e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Invalid Epoch Count");
+            alert.setHeaderText("Epoch Count Must Be a Positive Integer");
+            alert.setContentText("Please enter a valid positive integer for the epoch count.");
+            alert.showAndWait();
+            resetBoard();
+            throw new ExcHandled();
+        }
+    }
+
+    private @NonNull PLAYER getPlayer() {
+        GameGUI.HUMAN_PLAYER_SYMBOL humanPlayerSymbol = strToPlayer.get(cbPlayer.getValue());
+        if (humanPlayerSymbol == null)
+            throw new RuntimeException("Unknown human player symbol selected");
+
+        // Save to preferences
+        prefs.put("human_player_symbol", playerToStr.get(humanPlayerSymbol));
+
+        return switch (humanPlayerSymbol) {
+            case GameGUI.HUMAN_PLAYER_SYMBOL.X -> PLAYER.X;
+            case GameGUI.HUMAN_PLAYER_SYMBOL.O -> PLAYER.O;
+            case GameGUI.HUMAN_PLAYER_SYMBOL.RANDOM -> Math.random() < 0.5 ? PLAYER.X : PLAYER.O;
+        };
+    }
+
+    private void runNNvsNNGame() throws NNNotProvidedException, ExcHandled {
+        FFN nn1 = nnProvider.apply(0);
+        FFN nn2 = nnProvider.apply(1);
+
+        if (nn1 == null)
+            throw new NNNotProvidedException(0, "NN 1 must be provided for NN vs NN mode.");
+        if (nn2 == null)
+            throw new NNNotProvidedException(1, "NN 2 must be provided for NN vs NN mode.");
+
+        NNTab.NNParameters params1 = nnParamsProvider.apply(0);
+        NNTab.NNParameters params2 = nnParamsProvider.apply(1);
+
+        Function<PLAYER, NNActor> getActor1 = p -> new NNActor(p, nn1, params1.trainer(), params1.alpha(), params1.gamma(), params1.epsilon());
+        Function<PLAYER, NNActor> getActor2 = p -> new NNActor(p, nn2, params2.trainer(), params2.alpha(), params2.gamma(), params2.epsilon());
+
+        int epochCount = getEpochCount();
+        if (epochCount > 0)
+            runTrainingGames(getActor1, getActor2, epochCount);
+
+        // Save to preferences
+        prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
+
+        game.run(getActor1.apply(PLAYER.X), getActor2.apply(PLAYER.O), null, this::updateNavButtons);
+    }
+
+    private void runHumanVsNNGame() throws NNNotProvidedException {
+        FFN nn = nnProvider.apply(0);
+
+        if (nn == null)
+            throw new NNNotProvidedException(0, "NN must be provided for Human vs NN mode.");
+
+        NNTab.NNParameters params = nnParamsProvider.apply(0);
+
+        PLAYER humanPlayer = getPlayer();
+        PLAYER nnPlayer = (humanPlayer == PLAYER.X) ? PLAYER.O : PLAYER.X;
+
+        GUIActor humanActor = new GUIActor(humanPlayer, game::moveEvent, game::chooseBoardEvent);
+        NNActor nnActor = new NNActor(nnPlayer, nn, params.trainer(), params.alpha(), params.gamma(), params.epsilon());
+
+        Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : nnActor;
+        Actor actor2 = (humanPlayer == PLAYER.X) ? nnActor : humanActor;
+
+        game.run(actor1, actor2, humanActor, this::updateNavButtons);
+    }
+
+    private void runNNvsAlgoGame() throws NNNotProvidedException, ExcHandled {
+        FFN nn = nnProvider.apply(0);
+
+        if (nn == null)
+            throw new NNNotProvidedException(0, "NN must be provided for NN vs Algorithm mode.");
+
+        NNTab.NNParameters params = nnParamsProvider.apply(0);
+        int dfsStrength = (int) dfsStrengthSlider.getValue();
+
+        Function<PLAYER, NNActor> getNNActor = p -> new NNActor(p, nn, params.trainer(), params.alpha(), params.gamma(), params.epsilon());
+        Function<PLAYER, DFSActor> getDFSActor = p -> new DFSActor(p, dfsStrength);
+
+        int epochCount = getEpochCount();
+        if (epochCount > 0)
+            runTrainingGames(getNNActor, getDFSActor, epochCount);
+
+        // Save to preferences
+        prefs.put("nn_training_epoch_count", Integer.toString(epochCount));
+        prefs.put("dfs_strength", Integer.toString(dfsStrength));
+
+        game.run(getNNActor.apply(PLAYER.X), getDFSActor.apply(PLAYER.O), null, this::updateNavButtons);
+    }
+
+    private void runHumanVsAlgoGame() throws NNNotProvidedException {
+        int dfsStrength = (int) dfsStrengthSlider.getValue();
+
+        PLAYER humanPlayer = getPlayer();
+        PLAYER algoPlayer = (humanPlayer == PLAYER.X) ? PLAYER.O : PLAYER.X;
+
+        GUIActor humanActor = new GUIActor(humanPlayer, game::moveEvent, game::chooseBoardEvent);
+        DFSActor algoActor = new DFSActor(algoPlayer, dfsStrength);
+
+        Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : algoActor;
+        Actor actor2 = (humanPlayer == PLAYER.X) ? algoActor : humanActor;
+
+        // Save to preferences
+        prefs.put("dfs_strength", Integer.toString(dfsStrength));
+
+        game.run(actor1, actor2, humanActor, this::updateNavButtons);
     }
 
     private void showNNNotProvidedAlert() {
@@ -345,6 +449,27 @@ public class GameTab extends Tab {
         alert.setHeaderText("Invalid Neural Network Parameters");
         alert.setContentText("The parameters for one or more neural networks are invalid. Please check the 'Neural Networks' tab and ensure all parameters are correctly set.");
         alert.showAndWait();
+    }
+
+    private void runTrainingGames(Function<PLAYER, ? extends Actor> getActor1, Function<PLAYER, ? extends Actor> getActor2, int count) {
+        if (getActor1 == null || getActor2 == null)
+            throw new RuntimeException("Actor providers cannot be null.");
+
+        for (int i = 0; i < count; i++) {
+            if (Math.random() > 0.5) {
+                Function<PLAYER, ? extends Actor> tmp = getActor1;
+                getActor1 = getActor2;
+                getActor2 = tmp;
+            }
+            Actor actorX = getActor1.apply(PLAYER.X);
+            Actor actorO = getActor2.apply(PLAYER.O);
+            Game game = new Game(actorX, actorO);
+            if (actorX instanceof NNActor)
+                game.addObserver(((NNActor) actorX)::eventHandler);
+            if (actorO instanceof NNActor)
+                game.addObserver(((NNActor) actorO)::eventHandler);
+            game.run();
+        }
     }
 
     private void enableStartGameControls() {
@@ -401,7 +526,7 @@ public class GameTab extends Tab {
 
     private void resetBoard() {
         game.stop();
-        game = new GameGUI(nnProvider, nnParamsProvider);
+        game = new GameGUI();
         root.setCenter(game.getPane());
         updateNavButtons();
         enableStartGameControls();

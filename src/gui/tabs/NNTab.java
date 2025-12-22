@@ -31,6 +31,7 @@ public class NNTab extends Tab {
         private final Preferences prefs;
         private FFN net;
 
+        private final String title;
         private final VBox box;
         private final TextField tfHidden;
         private final TextField tfSelectionMultiplier;
@@ -48,6 +49,7 @@ public class NNTab extends Tab {
 
         public NNPanel(String title, Preferences prefs) {
             this.prefs = prefs;
+            this.title = title;
 
             box = new VBox(10);
             box.setPadding(new Insets(12));
@@ -274,7 +276,7 @@ public class NNTab extends Tab {
                     default -> throw new InvalidParametersException("Invalid trainer selected.");
                 }
             } catch (NumberFormatException ex) {
-                throw new InvalidParametersException("Invalid NN parameters input. Alpha, gamma, epsilon, trainer & batchSize must be valid numbers.");
+                throw new InvalidParametersException("Invalid NN parameters input for NN " + title + ". Alpha, gamma, epsilon, trainer & batchSize must be valid numbers.");
             }
 
             prefs.put("alpha", Double.toString(alpha));
