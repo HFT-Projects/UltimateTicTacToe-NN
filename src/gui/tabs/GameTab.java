@@ -27,6 +27,8 @@ public class GameTab extends Tab {
     private static final String VIEW_MODE = "View Game";
     private static final Map<GameGUI.GAME_MODE, String> modeToStr;
     private static final Map<String, GameGUI.GAME_MODE> strToMode;
+    private static final Map<GameGUI.HUMAN_PLAYER_SYMBOL, String> playerToStr;
+    private static final Map<String, GameGUI.HUMAN_PLAYER_SYMBOL> strToPlayer;
 
     static {
         Map<GameGUI.GAME_MODE, String> tmpModeToStr = new LinkedHashMap<>();
@@ -41,13 +43,24 @@ public class GameTab extends Tab {
             tmpStrToMode.put(entry.getValue(), entry.getKey());
         }
         strToMode = Collections.unmodifiableMap(tmpStrToMode);
+
+        Map<GameGUI.HUMAN_PLAYER_SYMBOL, String> tmpPlayerToStr = new LinkedHashMap<>();
+        tmpPlayerToStr.put(GameGUI.HUMAN_PLAYER_SYMBOL.X, "X");
+        tmpPlayerToStr.put(GameGUI.HUMAN_PLAYER_SYMBOL.O, "O");
+        tmpPlayerToStr.put(GameGUI.HUMAN_PLAYER_SYMBOL.RANDOM, "Random");
+        playerToStr = Collections.unmodifiableMap(tmpPlayerToStr);
+
+        Map<String, GameGUI.HUMAN_PLAYER_SYMBOL> tmpStrToPlayer = new LinkedHashMap<>();
+        for (Map.Entry<GameGUI.HUMAN_PLAYER_SYMBOL, String> entry : tmpPlayerToStr.entrySet()) {
+            tmpStrToPlayer.put(entry.getValue(), entry.getKey());
+        }
+        strToPlayer = Collections.unmodifiableMap(tmpStrToPlayer);
     }
 
     private final MainWindow mainWindow;
     private final BorderPane root;
     private ComboBox<String> cbMode;
-    private ToggleGroup playerGroup;
-    private RadioButton playerXRadio, playerORadio, playerRandomRadio;
+    private ComboBox<String> cbPlayer;
     private HBox nnSettingsBox;
     private HBox playerSelectionBox;
     private HBox dfsSettingsBox;
@@ -87,12 +100,10 @@ public class GameTab extends Tab {
 
         // Load saved human player symbol from preferences
         String savedPlayerSymbol = prefs.get("human_player_symbol", "random");
-        switch (savedPlayerSymbol) {
-            case "X" -> playerGroup.selectToggle(playerXRadio);
-            case "O" -> playerGroup.selectToggle(playerORadio);
-            case "random" -> playerGroup.selectToggle(playerRandomRadio);
-            default -> throw new RuntimeException("Unknown saved human player symbol: " + savedPlayerSymbol);
-        }
+        if (!cbPlayer.getItems().contains(savedPlayerSymbol))
+            System.out.println("Unknown saved human player symbol: " + savedPlayerSymbol);
+        else
+            cbPlayer.setValue(savedPlayerSymbol);
 
         setContent(root);
 
@@ -165,22 +176,11 @@ public class GameTab extends Tab {
         playerLabel.setTextFill(Color.WHITE);
         playerLabel.setFont(Font.font("Arial", 14));
 
-        playerGroup = new ToggleGroup();
+        cbPlayer = new ComboBox<>();
+        cbPlayer.getItems().addAll(strToPlayer.keySet());
+        cbPlayer.getSelectionModel().selectFirst();
 
-        playerXRadio = new RadioButton("X");
-        playerXRadio.setToggleGroup(playerGroup);
-        playerXRadio.setTextFill(Color.web("#ff6b6b"));
-
-        playerORadio = new RadioButton("O");
-        playerORadio.setToggleGroup(playerGroup);
-        playerORadio.setTextFill(Color.web("#4ecdc4"));
-
-        playerRandomRadio = new RadioButton("Random");
-        playerRandomRadio.setToggleGroup(playerGroup);
-        playerRandomRadio.setSelected(true);
-        playerRandomRadio.setTextFill(Color.LIGHTGRAY);
-
-        playerSelectionBox = new HBox(15, playerLabel, playerXRadio, playerORadio, playerRandomRadio);
+        playerSelectionBox = new HBox(15, playerLabel, cbPlayer);
         playerSelectionBox.setAlignment(Pos.CENTER);
         playerSelectionBox.setVisible(false);
         playerSelectionBox.setManaged(false);
@@ -288,18 +288,6 @@ public class GameTab extends Tab {
         // Save selected mode to preferences
         prefs.put("game_mode", modeToStr.get(mode));
 
-        // Save selected human player symbol to preferences
-        String selectedPlayerSymbol;
-        if (playerXRadio.isSelected())
-            selectedPlayerSymbol = "X";
-        else if (playerORadio.isSelected())
-            selectedPlayerSymbol = "O";
-        else if (playerRandomRadio.isSelected())
-            selectedPlayerSymbol = "random";
-        else
-            throw new RuntimeException("Unknown human player symbol selected");
-        prefs.put("human_player_symbol", selectedPlayerSymbol);
-
         disableStartGameControls();
 
         int epochCount = 0;
@@ -322,14 +310,13 @@ public class GameTab extends Tab {
         }
 
         GameGUI.HUMAN_PLAYER_SYMBOL humanPlayerSymbol = null;
-        if (mode == GameGUI.GAME_MODE.HUMAN_VS_NN || mode == GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM)
-            if (playerXRadio.isSelected()) {
-                humanPlayerSymbol = GameGUI.HUMAN_PLAYER_SYMBOL.X;
-            } else if (playerORadio.isSelected()) {
-                humanPlayerSymbol = GameGUI.HUMAN_PLAYER_SYMBOL.O;
-            } else {
-                humanPlayerSymbol = GameGUI.HUMAN_PLAYER_SYMBOL.RANDOM;
-            }
+        if (mode == GameGUI.GAME_MODE.HUMAN_VS_NN || mode == GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM) {
+            humanPlayerSymbol = strToPlayer.get(cbPlayer.getValue());
+            if (humanPlayerSymbol == null)
+                throw new RuntimeException("Unknown human player symbol selected");
+            // Save selected human player symbol to preferences
+            prefs.put("human_player_symbol", playerToStr.get(humanPlayerSymbol));
+        }
 
         prefs.put("dfs_strength", Integer.toString((int) dfsStrengthSlider.getValue()));
 
@@ -379,9 +366,7 @@ public class GameTab extends Tab {
         }
         resetBtn.setDisable(true);
         cbMode.setDisable(false);
-        playerXRadio.setDisable(false);
-        playerORadio.setDisable(false);
-        playerRandomRadio.setDisable(false);
+        cbPlayer.setDisable(false);
     }
 
     private void disableStartGameControls() {
@@ -404,9 +389,7 @@ public class GameTab extends Tab {
         }
         resetBtn.setDisable(false);
         cbMode.setDisable(true);
-        playerXRadio.setDisable(true);
-        playerORadio.setDisable(true);
-        playerRandomRadio.setDisable(true);
+        cbPlayer.setDisable(true);
     }
 
     private void updateNavButtons() {
