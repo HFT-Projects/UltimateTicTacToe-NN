@@ -54,7 +54,10 @@ public class LocalBoardGUI {
         return pane;
     }
 
-    private void setCellStyle(Label cell, PLAYER player, boolean highlight, boolean opaque) {
+    private void setCellStyle(Label cell, PLAYER player, boolean highlightEnemyMove, PLAYER highlightSelectionPlayer, boolean opaque) {
+        if (highlightEnemyMove && highlightSelectionPlayer != null) {
+            throw new IllegalArgumentException("A cell cannot be highlighted for both enemy move and selection at the same time.");
+        }
         String bg = "#4a4a4a";
         String text;
         if (player == PLAYER.X) {
@@ -65,8 +68,12 @@ public class LocalBoardGUI {
             text = opaque ? "#ffffff80" : "#ffffff";
         }
         String border = "";
-        if (highlight) {
+        if (highlightEnemyMove) {
             border = "-fx-border-color: yellow; -fx-border-width: 2;";
+            bg = "#666";
+        }
+        if (highlightSelectionPlayer != null) {
+            border = "-fx-border-color: " + ((highlightSelectionPlayer == PLAYER.X) ? "#ff6b6b" : "#4ecdc4") + "; -fx-border-width: 2;";
             bg = "#666";
         }
         cell.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + text + ";" + border);
@@ -75,18 +82,22 @@ public class LocalBoardGUI {
     public void displayState(PLAYER[] state, Integer lastMoveCell) {
         for (int i = 0; i < 9; i++) {
             PLAYER player = state[i];
-            boolean highlight = (lastMoveCell != null && lastMoveCell == i);
+            boolean enemyHighlight = (lastMoveCell != null && lastMoveCell == i);
+
+            if (enemyHighlight && player == null) {
+                throw new IllegalArgumentException("Last move cell cannot be empty.");
+            }
 
             Label cell = cells[i];
             if (player == PLAYER.X) {
                 cell.setText("X");
-                setCellStyle(cell, PLAYER.X, highlight, false);
+                setCellStyle(cell, PLAYER.X, enemyHighlight, null, false);
             } else if (player == PLAYER.O) {
                 cell.setText("O");
-                setCellStyle(cell, PLAYER.O, highlight, false);
+                setCellStyle(cell, PLAYER.O, enemyHighlight, null, false);
             } else {
                 cell.setText("");
-                setCellStyle(cell, null, false, false);
+                setCellStyle(cell, null, false, null, false);
             }
 
             ENDED_STATUS status = Utils.localEnded(state);
@@ -128,19 +139,19 @@ public class LocalBoardGUI {
         for (int sel : playableSelections) {
             Label cell = cells[sel];
             cell.setOnMouseClicked(_ -> action.set(sel));
-            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, true, false));
+            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, player, false));
 
             // preview X/O on Hover
             cell.setOnMouseEntered(_ -> {
                 if (cell.getText().isEmpty()) {
                     cell.setText(player == PLAYER.X ? "X" : "O");
-                    setCellStyle(cell, player, true, true);
+                    setCellStyle(cell, player, false, player, true);
                 }
             });
             cell.setOnMouseExited(_ -> {
                 if (action.get() == null && (player == PLAYER.X && "X".equals(cell.getText()) || player == PLAYER.O && "O".equals(cell.getText()))) {
                     cell.setText("");
-                    setCellStyle(cell, null, true, false);
+                    setCellStyle(cell, null, false, player, false);
                 }
             });
         }
@@ -163,7 +174,7 @@ public class LocalBoardGUI {
             cell.setOnMouseClicked(null);
             cell.setOnMouseEntered(null);
             cell.setOnMouseExited(null);
-            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, false));
+            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, null, false));
         }
 
         return action.get();
