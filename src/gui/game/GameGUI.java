@@ -30,7 +30,8 @@ public class GameGUI {
     private final Label stepLabel;
 
     private boolean ran = false;
-    GUIActor guiActor = null;
+    private GUIActor guiActor = null;
+    private Actor predictor = null;
     private final MoveHistoryGenerator moveHistoryGenerator = new MoveHistoryGenerator();
     private Move[] moveHistory = null;
     private PLAYER[][] state = new PLAYER[9][9];
@@ -38,7 +39,6 @@ public class GameGUI {
     private final AtomicReference<Boolean> exit = new AtomicReference<>(false);
 
     public GameGUI() {
-
         pane = new FlowPane();
         pane.setOrientation(Orientation.VERTICAL);
         pane.setAlignment(Pos.TOP_CENTER);
@@ -54,18 +54,21 @@ public class GameGUI {
         pane.getChildren().setAll(globalBoard.getPane(), statusLabel, stepLabel);
     }
 
-    public void run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, Runnable onComplete) {
+    public void run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, @Nullable Actor predictor, Runnable onComplete) {
         if (ran)
             throw new RuntimeException("GameGUI can only run / load once per instance.");
         ran = true;
 
         this.guiActor = guiActor;
+        this.predictor = predictor;
 
         uttt.Game game = new uttt.Game(actorX, actorO);
         if (actorX instanceof NNActor)
             game.addObserver(((NNActor) actorX)::eventHandler);
         if (actorO instanceof NNActor)
             game.addObserver(((NNActor) actorO)::eventHandler);
+        if (predictor instanceof NNActor)
+            game.addObserver(((NNActor) predictor)::eventHandler);
 
         game.addObserver(e -> {
             moveHistoryGenerator.handleEvent(e);
@@ -92,14 +95,20 @@ public class GameGUI {
 
     public int moveEvent(@SuppressWarnings("unused") PLAYER[][] state, int localBoardSel, int[] playableActions) {
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Choose your cell!"));
-        int action = globalBoard.selectMove(guiActor.getPlayer(), localBoardSel, playableActions, exit);
+        Integer predictedMove = null;
+        if (predictor != null)
+            predictedMove = predictor.move(state, localBoardSel, playableActions);
+        int action = globalBoard.selectMove(guiActor.getPlayer(), localBoardSel, playableActions, predictedMove, exit);
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Game running..."));
         return action;
     }
 
     public int chooseBoardEvent(@SuppressWarnings("unused") PLAYER[][] state, int[] playableBoards) {
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Choose your board!"));
-        int action = globalBoard.chooseBoard(guiActor.getPlayer(), playableBoards, exit);
+        Integer predictedBoard = null;
+        if (predictor != null)
+            predictedBoard = predictor.chooseBoard(state, playableBoards);
+        int action = globalBoard.chooseBoard(guiActor.getPlayer(), playableBoards, predictedBoard, exit);
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Game running..."));
         return action;
     }

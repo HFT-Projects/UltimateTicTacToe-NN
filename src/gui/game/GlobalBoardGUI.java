@@ -33,20 +33,20 @@ public class GlobalBoardGUI {
             throw new IllegalArgumentException("Both lastMoveBoard and lastMoveAction should be null or non-null");
 
         for (int global = 0; global < 9; global++) {
-            localBoards[global].displayState(state[global], Objects.equals(global, lastMoveBoard) ? lastMoveAction : null);
+            localBoards[global].displayState(state[global], Objects.equals(global, lastMoveBoard) ? lastMoveAction : null, null);
         }
     }
 
-    public int selectMove(PLAYER player, int localBoardSel, int[] playableSelections, AtomicReference<Boolean> exit) {
+    public int selectMove(PLAYER player, int localBoardSel, int[] playableSelections, Integer predictedCell, AtomicReference<Boolean> exit) {
         LocalBoardGUI board = localBoards[localBoardSel];
-        return board.selectCell(player, playableSelections, exit);
+        return board.selectCell(player, playableSelections, predictedCell, exit);
     }
 
-    public int chooseBoard(PLAYER player, int[] playableBoards, AtomicReference<Boolean> exit) {
+    public int chooseBoard(PLAYER player, int[] playableBoards, Integer predictedCell, AtomicReference<Boolean> exit) {
         AtomicReference<Integer> selBoard = new AtomicReference<>();
         for (int sel : playableBoards) {
             LocalBoardGUI board = localBoards[sel];
-            board.startChooseBoard(player, () -> selBoard.set(sel));
+            board.startChooseBoard(player, () -> selBoard.set(sel), predictedCell != null && sel == predictedCell);
         }
 
         while (selBoard.get() == null) {

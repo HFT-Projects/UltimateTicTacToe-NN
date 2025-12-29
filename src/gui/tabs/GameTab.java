@@ -71,6 +71,8 @@ public class GameTab extends Tab {
     private final BorderPane root;
     private ComboBox<String> cbMode;
     private ComboBox<String> cbPlayer;
+    private CheckBox cbUsePredictor;
+    private ComboBox<String> cbPredictor;
     private HBox nnSettingsBox;
     private HBox playerSelectionBox;
     private HBox dfsSettingsBox;
@@ -117,6 +119,15 @@ public class GameTab extends Tab {
             System.out.println("Unknown saved game mode: " + savedMode);
         else
             cbMode.setValue(savedMode);
+
+        cbUsePredictor.setSelected(Boolean.parseBoolean(prefs.get("use_predictor", "false")));
+
+        // Load saved predictor from preferences
+        String savedPredictor = prefs.get("predictor", "Algorithm");
+        if (!cbPredictor.getItems().contains(savedPredictor))
+            System.out.println("Unknown predictor mode: " + savedPredictor);
+        else
+            cbPredictor.setValue(savedPredictor);
 
         // Load saved human player symbol from preferences
         String savedPlayerSymbol = prefs.get("human_player_symbol", "random");
@@ -203,7 +214,40 @@ public class GameTab extends Tab {
         cbPlayer.getItems().addAll(strToPlayer.keySet());
         cbPlayer.getSelectionModel().selectFirst();
 
-        playerSelectionBox = new HBox(15, playerLabel, cbPlayer);
+        cbUsePredictor = new CheckBox("Use predictor (white)");
+        cbUsePredictor.setStyle("-fx-text-fill: white");
+        cbUsePredictor.selectedProperty().addListener((_, _, newVal) -> {
+            cbPredictor.setDisable(!newVal);
+
+            String mode = cbMode.getValue();
+            boolean algoMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+            if (cbPredictor.getValue().equals("Algorithm") && newVal || algoMode) {
+                dfsSettingsBox.setVisible(true);
+                dfsSettingsBox.setManaged(true);
+            } else {
+                dfsSettingsBox.setVisible(false);
+                dfsSettingsBox.setManaged(false);
+            }
+        });
+
+        cbPredictor = new ComboBox<>();
+        cbPredictor.getItems().addAll("NN (2)", "Algorithm");
+        cbPredictor.getSelectionModel().selectFirst();
+        cbPredictor.setDisable(true);
+        cbPredictor.valueProperty().addListener((_, _, newVal) -> {
+            String mode = cbMode.getValue();
+            boolean algoMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+
+            if (newVal.equals("Algorithm") && cbUsePredictor.isSelected() || algoMode) {
+                dfsSettingsBox.setVisible(true);
+                dfsSettingsBox.setManaged(true);
+            } else {
+                dfsSettingsBox.setVisible(false);
+                dfsSettingsBox.setManaged(false);
+            }
+        });
+
+        playerSelectionBox = new HBox(15, playerLabel, cbPlayer, cbUsePredictor, cbPredictor);
         playerSelectionBox.setAlignment(Pos.CENTER);
         playerSelectionBox.setVisible(false);
         playerSelectionBox.setManaged(false);
@@ -229,8 +273,9 @@ public class GameTab extends Tab {
             playerSelectionBox.setVisible(humanMode);
             playerSelectionBox.setManaged(humanMode);
 
-            dfsSettingsBox.setVisible(algoMode);
-            dfsSettingsBox.setManaged(algoMode);
+            boolean dfs = algoMode || (humanMode && cbUsePredictor.isSelected() && cbPredictor.getValue().equals("Algorithm"));
+            dfsSettingsBox.setVisible(dfs);
+            dfsSettingsBox.setManaged(dfs);
 
             trainingProgressBox.setVisible(trainingMode);
             trainingProgressBox.setManaged(trainingMode);
@@ -419,7 +464,7 @@ public class GameTab extends Tab {
                 if (epochCount > 0)
                     runTrainingGames(getActor1, getActor2, epochCount, swapActors);
 
-                game.run(getActor1.apply(PLAYER.X, epochCount), getActor2.apply(PLAYER.O, epochCount), null, this::gameFinishedEvent);
+                game.run(getActor1.apply(PLAYER.X, epochCount), getActor2.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -446,12 +491,40 @@ public class GameTab extends Tab {
         Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : nnActor;
         Actor actor2 = (humanPlayer == PLAYER.X) ? nnActor : humanActor;
 
+        Actor predictor = null;
+        if (cbUsePredictor.isSelected()) {
+            switch (cbPredictor.getValue()) {
+                case "NN (2)" -> {
+                    FFN nnPred = nnProvider.apply(1);
+                    if (nnPred == null) {
+                        throw new NNNotProvidedException(1, "Predictor NN (2) must be provided for Human vs NN mode.");
+                    }
+                    NNTab.NNParameters predParams = nnParamsProvider.apply(1);
+                    predictor = new NNActor(getPlayer(), nnPred, predParams.trainer(), predParams.alpha(), predParams.gamma(), 0);
+                }
+                case "Algorithm" -> {
+                    int dfsStrength = (int) dfsStrengthSlider.getValue();
+                    predictor = new DFSActor(getPlayer(), dfsStrength);
+                    prefs.put("dfs_strength", Integer.toString(dfsStrength));
+                }
+                default -> throw new RuntimeException("Unknown predictor selected");
+            }
+        }
+
+        // Save to preferences
+        prefs.put("use_predictor", Boolean.toString(cbUsePredictor.isSelected()));
+        if (cbUsePredictor.isSelected())
+            prefs.put("predictor", cbPredictor.getValue());
+
+        // final predictor for lambda capture
+        final Actor fPredictor = predictor;
+
         // Start game thread
         if (gameThread != null)
             throw new RuntimeException("Game thread is already running.");
         gameThread = new Thread(() -> {
             try {
-                game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+                game.run(actor1, actor2, humanActor, fPredictor, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -492,7 +565,7 @@ public class GameTab extends Tab {
                 if (epochCount > 0)
                     runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
 
-                game.run(getNNActor.apply(PLAYER.X, epochCount), getDFSActor.apply(PLAYER.O, epochCount), null, this::gameFinishedEvent);
+                game.run(getNNActor.apply(PLAYER.X, epochCount), getDFSActor.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -514,15 +587,40 @@ public class GameTab extends Tab {
         Actor actor1 = (humanPlayer == PLAYER.X) ? humanActor : algoActor;
         Actor actor2 = (humanPlayer == PLAYER.X) ? algoActor : humanActor;
 
+        Actor predictor = null;
+        if (cbUsePredictor.isSelected()) {
+            switch (cbPredictor.getValue()) {
+                case "NN (2)" -> {
+                    FFN nnPred = nnProvider.apply(1);
+                    if (nnPred == null) {
+                        throw new NNNotProvidedException(1, "Predictor NN (2) must be provided for Human vs NN mode.");
+                    }
+                    NNTab.NNParameters predParams = nnParamsProvider.apply(1);
+                    predictor = new NNActor(getPlayer(), nnPred, predParams.trainer(), predParams.alpha(), predParams.gamma(), 0);
+                }
+                case "Algorithm" -> {
+                    predictor = new DFSActor(getPlayer(), dfsStrength);
+                    prefs.put("dfs_strength", Integer.toString(dfsStrength));
+                }
+                default -> throw new RuntimeException("Unknown predictor selected");
+            }
+        }
+
         // Save to preferences
         prefs.put("dfs_strength", Integer.toString(dfsStrength));
+        prefs.put("use_predictor", Boolean.toString(cbUsePredictor.isSelected()));
+        if (cbUsePredictor.isSelected())
+            prefs.put("predictor", cbPredictor.getValue());
+
+        // final predictor for lambda capture
+        final Actor fPredictor = predictor;
 
         // Start game thread
         if (gameThread != null)
             throw new RuntimeException("Game thread is already running.");
         gameThread = new Thread(() -> {
             try {
-                game.run(actor1, actor2, humanActor, this::gameFinishedEvent);
+                game.run(actor1, actor2, humanActor, fPredictor, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -612,6 +710,9 @@ public class GameTab extends Tab {
         resetBtn.setDisable(true);
         cbMode.setDisable(false);
         cbPlayer.setDisable(false);
+        cbUsePredictor.setDisable(false);
+        if (cbUsePredictor.isSelected())
+            cbPredictor.setDisable(false);
     }
 
     private void disableStartGameControls() {
@@ -635,6 +736,8 @@ public class GameTab extends Tab {
         resetBtn.setDisable(false);
         cbMode.setDisable(true);
         cbPlayer.setDisable(true);
+        cbUsePredictor.setDisable(true);
+        cbPredictor.setDisable(true);
     }
 
     private void updateNavButtons() {

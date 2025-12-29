@@ -54,9 +54,12 @@ public class LocalBoardGUI {
         return pane;
     }
 
-    private void setCellStyle(Label cell, PLAYER player, boolean highlightEnemyMove, PLAYER highlightSelectionPlayer, boolean opaque) {
+    private void setCellStyle(Label cell, PLAYER player, boolean highlightEnemyMove, PLAYER highlightSelectionPlayer, boolean highlightPrediction, boolean opaque) {
         if (highlightEnemyMove && highlightSelectionPlayer != null) {
-            throw new IllegalArgumentException("A cell cannot be highlighted for both enemy move and selection at the same time.");
+            throw new IllegalArgumentException("Cannot highlight enemy move and selection at the same time.");
+        }
+        if (highlightEnemyMove && highlightPrediction) {
+            throw new IllegalArgumentException("Cannot highlight enemy move and prediction at the same time.");
         }
         String bg = "#4a4a4a";
         String text;
@@ -72,17 +75,21 @@ public class LocalBoardGUI {
             border = "-fx-border-color: yellow; -fx-border-width: 2;";
             bg = "#666";
         }
-        if (highlightSelectionPlayer != null) {
+        if (highlightPrediction) {
+            border = "-fx-border-color: white; -fx-border-width: 2;";
+            bg = "#666";
+        } else if (highlightSelectionPlayer != null) {
             border = "-fx-border-color: " + ((highlightSelectionPlayer == PLAYER.X) ? "#ff6b6b" : "#4ecdc4") + "; -fx-border-width: 2;";
             bg = "#666";
         }
         cell.setStyle("-fx-background-color: " + bg + "; -fx-text-fill: " + text + ";" + border);
     }
 
-    public void displayState(PLAYER[] state, Integer lastMoveCell) {
+    public void displayState(PLAYER[] state, Integer lastMoveCell, Integer predictedCell) {
         for (int i = 0; i < 9; i++) {
             PLAYER player = state[i];
             boolean enemyHighlight = (lastMoveCell != null && lastMoveCell == i);
+            boolean predictionHighlight = (predictedCell != null && predictedCell == i);
 
             if (enemyHighlight && player == null) {
                 throw new IllegalArgumentException("Last move cell cannot be empty.");
@@ -91,13 +98,13 @@ public class LocalBoardGUI {
             Label cell = cells[i];
             if (player == PLAYER.X) {
                 cell.setText("X");
-                setCellStyle(cell, PLAYER.X, enemyHighlight, null, false);
+                setCellStyle(cell, PLAYER.X, enemyHighlight, null, false, false);
             } else if (player == PLAYER.O) {
                 cell.setText("O");
-                setCellStyle(cell, PLAYER.O, enemyHighlight, null, false);
+                setCellStyle(cell, PLAYER.O, enemyHighlight, null, false, false);
             } else {
                 cell.setText("");
-                setCellStyle(cell, null, false, null, false);
+                setCellStyle(cell, null, false, null, predictionHighlight, false);
             }
 
             ENDED_STATUS status = Utils.localEnded(state);
@@ -131,27 +138,29 @@ public class LocalBoardGUI {
         overlayLabel.setStyle("-fx-text-fill: " + color + "; -fx-background-color: rgba(0,0,0,0.35); -fx-alignment: center;");
     }
 
-    public int selectCell(PLAYER player, int[] playableSelections, AtomicReference<Boolean> exit) {
+    public int selectCell(PLAYER player, int[] playableSelections, Integer predictedCell, AtomicReference<Boolean> exit) {
         String highlightStyle = "-fx-background-color: #666;  -fx-padding: 5; -fx-border-color: " + ((player == PLAYER.X) ? "#ff6b6b" : "#4ecdc4") + ";";
         GUIUtils.runPlatformLaterBlocking(() -> pane.setStyle(highlightStyle));
 
         AtomicReference<Integer> action = new AtomicReference<>();
         for (int sel : playableSelections) {
+            boolean isPredicted = (predictedCell != null && predictedCell == sel);
+
             Label cell = cells[sel];
             cell.setOnMouseClicked(_ -> action.set(sel));
-            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, player, false));
+            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, player, isPredicted, false));
 
             // preview X/O on Hover
             cell.setOnMouseEntered(_ -> {
                 if (cell.getText().isEmpty()) {
                     cell.setText(player == PLAYER.X ? "X" : "O");
-                    setCellStyle(cell, player, false, player, true);
+                    setCellStyle(cell, player, false, player, isPredicted, true);
                 }
             });
             cell.setOnMouseExited(_ -> {
                 if (action.get() == null && (player == PLAYER.X && "X".equals(cell.getText()) || player == PLAYER.O && "O".equals(cell.getText()))) {
                     cell.setText("");
-                    setCellStyle(cell, null, false, player, false);
+                    setCellStyle(cell, null, false, player, isPredicted, false);
                 }
             });
         }
@@ -174,14 +183,15 @@ public class LocalBoardGUI {
             cell.setOnMouseClicked(null);
             cell.setOnMouseEntered(null);
             cell.setOnMouseExited(null);
-            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, null, false));
+            GUIUtils.runPlatformLaterBlocking(() -> setCellStyle(cell, null, false, null, false, false));
         }
 
         return action.get();
     }
 
-    public void startChooseBoard(PLAYER player, Runnable onChoose) {
-        String highlightStyle = "-fx-background-color: #666;  -fx-padding: 5; -fx-border-color: " + ((player == PLAYER.X) ? "#ff6b6b" : "#4ecdc4") + ";";
+    public void startChooseBoard(PLAYER player, Runnable onChoose, boolean highlightPrediction) {
+        String borderColor = highlightPrediction ? "white" : ((player == PLAYER.X) ? "#ff6b6b" : "#4ecdc4");
+        String highlightStyle = "-fx-background-color: #666;  -fx-padding: 5; -fx-border-color: " + borderColor + ";";
         GUIUtils.runPlatformLaterBlocking(() -> pane.setStyle(highlightStyle));
 
         for (Label l : cells) {
