@@ -221,7 +221,8 @@ public class GameTab extends Tab {
 
             String mode = cbMode.getValue();
             boolean algoMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
-            if (cbPredictor.getValue().equals("Algorithm") && newVal || algoMode) {
+            boolean humanMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_NN)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
+            if (cbPredictor.getValue().equals("Algorithm") && newVal && humanMode || algoMode) {
                 dfsSettingsBox.setVisible(true);
                 dfsSettingsBox.setManaged(true);
             } else {
@@ -237,8 +238,9 @@ public class GameTab extends Tab {
         cbPredictor.valueProperty().addListener((_, _, newVal) -> {
             String mode = cbMode.getValue();
             boolean algoMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
+            boolean humanMode = mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_NN)) || mode.equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));
 
-            if (newVal.equals("Algorithm") && cbUsePredictor.isSelected() || algoMode) {
+            if (newVal.equals("Algorithm") && cbUsePredictor.isSelected() && humanMode || algoMode) {
                 dfsSettingsBox.setVisible(true);
                 dfsSettingsBox.setManaged(true);
             } else {
