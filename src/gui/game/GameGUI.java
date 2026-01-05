@@ -54,7 +54,7 @@ public class GameGUI {
         pane.getChildren().setAll(globalBoard.getPane(), statusLabel, stepLabel);
     }
 
-    public void run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, @Nullable Actor predictor, Runnable onComplete) {
+    public ENDED_STATUS run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, @Nullable Actor predictor, Runnable onComplete) {
         if (ran)
             throw new RuntimeException("GameGUI can only run / load once per instance.");
         ran = true;
@@ -86,6 +86,8 @@ public class GameGUI {
 
         GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
         onComplete.run();
+
+        return result;
     }
 
     // GUI API: return the node to embed in a parent layout
