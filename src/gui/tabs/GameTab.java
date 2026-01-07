@@ -21,7 +21,6 @@ import nn.FFN;
 import org.jspecify.annotations.NonNull;
 import uttt.Game;
 import uttt.actor.*;
-import uttt.board.ENDED_STATUS;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -472,41 +471,10 @@ public class GameTab extends Tab {
             throw new RuntimeException("Game thread is already running.");
         gameThread = new Thread(() -> {
             try {
-                int ties = 0, xWon = 0, oWon = 0, actor1Won = 0, actor2Won = 0;
                 if (epochCount > 0) {
-                    StatsResult stats = runTrainingGames(getActor1, getActor2, epochCount, swapActors);
-                    ties = stats.ties;
-                    xWon = stats.xWon;
-                    oWon = stats.oWon;
-                    actor1Won = stats.actor1Won;
-                    actor2Won = stats.actor2Won;
+                    runTrainingGames(getActor1, getActor2, epochCount, swapActors);
                 }
-
-                ENDED_STATUS result = game.run(getActor1.apply(PLAYER.X, epochCount), getActor2.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
-
-                switch (result) {
-                    case TIE -> ties++;
-                    case X -> {
-                        xWon++;
-                        actor1Won++;
-                    }
-                    case O -> {
-                        oWon++;
-                        actor2Won++;
-                    }
-                }
-
-                final int fTies = ties;
-                final int fXWon = xWon;
-                final int fOWon = oWon;
-                final int fActor1Won = actor1Won;
-                final int fActor2Won = actor2Won;
-
-                GUIUtils.runPlatformLaterBlocking(() -> {
-                    trainingResultStatsLabel.setVisible(true);
-                    trainingResultStatsLabel.setManaged(true);
-                    trainingResultStatsLabel.setText("Results (Training + Game): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\nNN 1 Won: " + fActor1Won + "\nNN 2 Won: " + fActor2Won);
-                });
+                game.run(getActor1.apply(PLAYER.X, epochCount), getActor2.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -604,41 +572,11 @@ public class GameTab extends Tab {
             throw new RuntimeException("Game thread is already running.");
         gameThread = new Thread(() -> {
             try {
-                int ties = 0, xWon = 0, oWon = 0, actor1Won = 0, actor2Won = 0;
                 if (epochCount > 0) {
-                    StatsResult stats = runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
-                    ties = stats.ties;
-                    xWon = stats.xWon;
-                    oWon = stats.oWon;
-                    actor1Won = stats.actor1Won;
-                    actor2Won = stats.actor2Won;
+                    runTrainingGames(getNNActor, getDFSActor, epochCount, swapActors);
                 }
 
-                ENDED_STATUS result = game.run(getNNActor.apply(PLAYER.X, epochCount), getDFSActor.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
-
-                switch (result) {
-                    case TIE -> ties++;
-                    case X -> {
-                        xWon++;
-                        actor1Won++;
-                    }
-                    case O -> {
-                        oWon++;
-                        actor2Won++;
-                    }
-                }
-
-                final int fTies = ties;
-                final int fXWon = xWon;
-                final int fOWon = oWon;
-                final int fActor1Won = actor1Won;
-                final int fActor2Won = actor2Won;
-
-                GUIUtils.runPlatformLaterBlocking(() -> {
-                    trainingResultStatsLabel.setVisible(true);
-                    trainingResultStatsLabel.setManaged(true);
-                    trainingResultStatsLabel.setText("Results (Training + Game): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\nNN 1 Won: " + fActor1Won + "\nAlgorithm Won: " + fActor2Won);
-                });
+                game.run(getNNActor.apply(PLAYER.X, epochCount), getDFSActor.apply(PLAYER.O, epochCount), null, null, this::gameFinishedEvent);
             } catch (UncheckedInterruptedException _) {
             } finally {
                 stopFlag = false;
@@ -719,22 +657,30 @@ public class GameTab extends Tab {
         alert.showAndWait();
     }
 
-    private record StatsResult(int ties, int xWon, int oWon, int actor1Won, int actor2Won) {
-    }
-
-    private StatsResult runTrainingGames(BiFunction<PLAYER, Integer, ? extends Actor> getActor1, BiFunction<PLAYER, Integer, ? extends Actor> getActor2, int count, boolean swapBetweenEpochs) {
+    private void runTrainingGames(BiFunction<PLAYER, Integer, ? extends Actor> getActor1, BiFunction<PLAYER, Integer, ? extends Actor> getActor2, int count, boolean swapBetweenEpochs) {
         if (getActor1 == null || getActor2 == null)
             throw new RuntimeException("Actor providers cannot be null.");
 
         int ties = 0, xWon = 0, oWon = 0, actor1Won = 0, actor2Won = 0;
         final BiFunction<PLAYER, Integer, ? extends Actor> originalActor1 = getActor1;
 
+        GUIUtils.runPlatformLaterBlocking(() -> {
+            trainingResultStatsLabel.setVisible(true);
+            trainingResultStatsLabel.setManaged(true);
+        });
+
         for (int i = 0; i < count; i++) {
             if (stopFlag)
                 throw new UncheckedInterruptedException();
 
             final int finalI = i;
+            final int fTies = ties;
+            final int fXWon = xWon;
+            final int fOWon = oWon;
+            final int fActor1Won = actor1Won;
+            final int fActor2Won = actor2Won;
             Platform.runLater(() -> {
+                trainingResultStatsLabel.setText("Results (ONLY Training): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\nNN 1 Won: " + fActor1Won + "\nNN 2 Won: " + fActor2Won);
                 trainingProgressBar.setProgress((double) finalI / count);
                 int trainingProgressSize = Integer.toString(count).length();
                 trainingProgressLabel.setText("Epoch " + String.format("%" + trainingProgressSize + "d", finalI) + "/" + count);
@@ -777,8 +723,6 @@ public class GameTab extends Tab {
             trainingProgressLabel.setText("Epoch " + count + "/" + count);
             trainingPercentLabel.setText("100,00%");
         });
-
-        return new StatsResult(ties, xWon, oWon, actor1Won, actor2Won);
     }
 
     private void gameFinishedEvent() {
