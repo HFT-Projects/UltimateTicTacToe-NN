@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import helper.Utils;
 import nn.activation.ActivationFunction;
 import nn.loss.LossFunction;
-import nn.loss.MeanSquaredError;
 import nn.trainer.FFNTrainer;
 
 import java.io.UncheckedIOException;
@@ -119,11 +118,7 @@ public class FFN {
 
         // deltas for output layer
         for (int j = 0; j < a[last].length; j++) {
-            if (lossFunction instanceof MeanSquaredError) {
-                delta[last][j] = gradOut[j] * outputActivation.activateDerivative(z[last][j]);
-            } else {
-                throw new IllegalArgumentException("Only MeanSquaredError loss function is supported for output layer.");
-            }
+            delta[last][j] = gradOut[j] * outputActivation.activateDerivative(z[last][j]);
         }
 
         // deltas for hidden layers
