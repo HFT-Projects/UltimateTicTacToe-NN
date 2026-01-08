@@ -16,6 +16,7 @@ namespace nn {
     - backward(yTrue: double[], a: double[][], z: double[][]): double[][]
     + predictQ(state: double[]): double[]
     + train(trainer: FFNTrainer, state: double[], target: double[], learningRate: double)
+    + applyTraining(trainer: FFNTrainer, learningRate: double)
     + save(filepath: String)
     + {static} load(filepath: String): FFN
     + equals(obj: Object): boolean
@@ -55,6 +56,19 @@ namespace nn {
       - updateWeights(learningRate: double, b: double[][], W: double[][][], layerSizes: int[])
       - resetGradients(layerSizes: int[])
     }
+
+    class FFNTrainerBGD implements FFNTrainer {
+          - batchCounter: int = 0
+          - gradW: double[][][] {final}
+          - gradB: double[][] {final}
+          - layerSizes: int[] {read-only}
+
+          + FFNTrainerBGD(layerSizes: int[])
+          + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+          + applyTraining(double[][] b, double[][][] W, double learningRate)
+          - updateWeights(b: double[][], W: double[][][], learningRate: double)
+          - resetGradients(layerSizes: int[])
+        }
   }
 
   namespace loss {
@@ -114,7 +128,6 @@ namespace uttt {
     }
 
     class DFSActor extends Actor {
-      - algo: DFS {final}
       - strength: int {read-only}
 
       + DFSActor(player: PLAYER, strength: int)
@@ -218,7 +231,7 @@ namespace uttt {
     }
     hide Move methods
 
-    class StorageManager() {
+    class StorageManager {
       - StorageManager()
       - {static} moveToMap(move: Move): Map<String, Object>
       - {static} mapToMove(map: Map<String, Object>): Move
@@ -250,10 +263,10 @@ namespace uttt {
     - notifyObservers(...)
   }
 
-  Game --> "1" GlobalBoard
+  Game --> "1 globalBoard" GlobalBoard
   Game --> "1 actorX" Actor
   Game --> "1 actorO" Actor
-  Game --> "*" Observer
+  Game --> "List<> observers *" Observer
 
   namespace algorithms {
     abstract class BruteForcer {
@@ -304,6 +317,8 @@ namespace uttt {
     }
     hide "BFS::Node" methods
   }
+
+  actor.DFSActor --> "1 algo" algorithms.DFS
 }
 
 uttt.actor.NNActor --> "1 trainer" nn.trainer.FFNTrainer
@@ -311,6 +326,10 @@ uttt.actor.NNActor --> "1 net" nn.FFN
 
 
 namespace helper {
+    interface TriFunction <T, U, V, R> {
+      apply(T t, U u, V v): R
+    }
+
     class Utils {
       + {static} ENDED_STATUS_TO_PLAYER: Map<ENDED_STATUS, PLAYER> {read-only}
       + {static} PLAYER_TO_ENDED_STATUS: Map<PLAYER, ENDED_STATUS> {read-only}
