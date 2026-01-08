@@ -22,6 +22,9 @@ public class MainWindow extends Application {
     private Stage primaryStage;
 
     public String selectFile(boolean save) {
+        if (fileChooser.getInitialDirectory() != null && !fileChooser.getInitialDirectory().isDirectory())
+            fileChooser.setInitialDirectory(null);
+
         File file;
         if (!save)
             file = fileChooser.showOpenDialog(primaryStage);
