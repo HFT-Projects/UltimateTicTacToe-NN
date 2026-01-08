@@ -138,7 +138,13 @@ public class GameTab extends Tab {
         else
             cbPlayer.setValue(savedPlayerSymbol);
 
-        setContent(root);
+        // Wrap the root pane into a ScrollPane so the tab becomes scrollable
+        ScrollPane scrollPane = new ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setPannable(true);
+        scrollPane.setStyle("-fx-background: transparent;"); // keep root background visible
+        setContent(scrollPane);
 
         root.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
             if (event.getCode() == KeyCode.LEFT) {

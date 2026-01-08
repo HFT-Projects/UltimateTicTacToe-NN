@@ -318,7 +318,14 @@ public class NNTab extends Tab {
 
         BorderPane root = new BorderPane();
         root.setCenter(split);
-        setContent(root);
+        // Wrap the root pane into a ScrollPane so the tab becomes scrollable
+        ScrollPane scrollPane = new ScrollPane(root);
+        scrollPane.setFitToWidth(true);
+        scrollPane.setFitToHeight(true);
+        scrollPane.setPannable(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        setContent(scrollPane);
     }
 
     // Helper function: parses "64,32" -> List<Integer>
