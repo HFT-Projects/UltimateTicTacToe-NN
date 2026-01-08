@@ -148,6 +148,7 @@ public class NNTab extends Tab {
 
 
             btnDelete.setDisable(true);
+            btnExport.setDisable(true);
             btnDelete.setOnAction(_ -> {
                 net = null;
 
