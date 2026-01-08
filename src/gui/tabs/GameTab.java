@@ -418,7 +418,7 @@ public class GameTab extends Tab {
         String epoch = epochTf.getText().trim();
         try {
             int epochCount = Integer.parseInt(epoch);
-            if (epochCount < 1)
+            if (epochCount < 0)
                 throw new NumberFormatException();
             return epochCount;
         } catch (NumberFormatException e) {
@@ -683,13 +683,7 @@ public class GameTab extends Tab {
                 throw new UncheckedInterruptedException();
 
             final int finalI = i;
-            final int fTies = ties;
-            final int fXWon = xWon;
-            final int fOWon = oWon;
-            final int fActor1Won = actor1Won;
-            final int fActor2Won = actor2Won;
             Platform.runLater(() -> {
-                trainingResultStatsLabel.setText("Results (ONLY Training): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\n" + actor1Name + " Won: " + fActor1Won + "\n" + actor2Name + " Won: " + fActor2Won);
                 trainingProgressBar.setProgress((double) finalI / count);
                 int trainingProgressSize = Integer.toString(count).length();
                 trainingProgressLabel.setText("Epoch " + String.format("%" + trainingProgressSize + "d", finalI) + "/" + count);
@@ -725,6 +719,13 @@ public class GameTab extends Tab {
                         actor2Won++;
                 }
             }
+
+            final int fTies = ties;
+            final int fXWon = xWon;
+            final int fOWon = oWon;
+            final int fActor1Won = actor1Won;
+            final int fActor2Won = actor2Won;
+            Platform.runLater(() -> trainingResultStatsLabel.setText("Results (ONLY Training): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\n" + actor1Name + " Won: " + fActor1Won + "\n" + actor2Name + " Won: " + fActor2Won));
         }
 
         Platform.runLater(() -> {
