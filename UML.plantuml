@@ -113,6 +113,17 @@ namespace uttt {
       - calculateReward(globalEndedStatus: ENDED_STATUS, localEndedStatus: ENDED_STATUS): int
     }
 
+    class DFSActor extends Actor {
+      - algo: DFS {final}
+      - strength: int {read-only}
+
+      + DFSActor(player: PLAYER, strength: int)
+      + move(state: PLAYER[][], localBoardSel: int, playableActions: int[]): int
+      + chooseBoard(state: PLAYER[][], playableBoards: int[]): int
+      - getScore(): double
+      - getWins(): int
+    }
+
     class GUIActor extends Actor {
       - moveHandler: TriFunction<PLAYER[][], Integer, int[], Integer> {read-only}
       - chooseBoardHandler: BiFunction<PLAYER[][], int[], Integer> {read-only}
@@ -243,6 +254,56 @@ namespace uttt {
   Game --> "1 actorX" Actor
   Game --> "1 actorO" Actor
   Game --> "*" Observer
+
+  namespace algorithms {
+    abstract class BruteForcer {
+      # x_wins: int = 0
+      # o_wins: int = 0
+      # ties: int = 0
+      # exploredStates: long = 0
+      # endStates: int = 0
+      + earlyReturn: boolean = false
+      + maxDepth: boolean = Integer.MAX_VALUE
+      + maxStates: boolean = Integer.MAX_VALUE
+      + printProgress: boolean = false
+      + maxEndStates: int = Integer.MAX_VALUE
+
+      + BruteForcer()
+      + getX_wins(): int
+      + getO_wins(): int
+      + getTies: int
+      + resetStats()
+      # incrementStats(end: ENDED_STATUS)
+      + {abstract} bruteForce(gb: PLAYER[][], player: PLAYER, idx: byte)
+    }
+
+    class DFS extends BruteForcer {
+      - r: Random {final}
+      ~ deepestDepth: int
+      + randomTraversal: boolean = true
+
+      + DFS()
+      + bruteForce(gb: PLAYER[][], player: PLAYER, idx: byte)
+      + depthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
+      - traverseAllPaths(l: PLAYER[], currentPlayer: PLAYER, baseState: PLAYER[][], currentDepth: int)
+      + randomDepthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
+      - traverseRandomPath(l: PLAYER[], currentPlayer: PLAYER, baseState: PLAYER[][], currentDepth: int)
+    }
+
+    class BFS extends BruteForcer {
+      - toExplore: Queue<Node> {final}
+      - fastestWayToWin: Node
+
+      + BFS()
+      + bruteForce(gb: PLAYER[][], player: PLAYER, idx: byte)
+      + breadthTraversal(n: Node, baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int)
+    }
+
+    record BFS::Node {
+      actions: List<int[]>
+    }
+    hide "BFS::Node" methods
+  }
 }
 
 uttt.actor.NNActor --> "1 trainer" nn.trainer.FFNTrainer
@@ -250,19 +311,6 @@ uttt.actor.NNActor --> "1 net" nn.FFN
 
 
 namespace helper {
-    class Stats {
-      - o_wins: int = 0
-      - x_wins: int = 0
-      - ties: ties = 0
-
-      + Stats()
-      + logGameEnd(endedStatus: ENDED_STATUS)
-      + {static} logEpisodeFinished(ep: int)
-      + logAllEpisodesEnd(hiddenActivations: ActivationFunction)
-      + boardToString(board: GlobalBoard, globalCellIndex: int, localCellIndex: int): String
-      + boardToString(board: GlobalBoard): String
-    }
-
     class Utils {
       + {static} ENDED_STATUS_TO_PLAYER: Map<ENDED_STATUS, PLAYER> {read-only}
       + {static} PLAYER_TO_ENDED_STATUS: Map<PLAYER, ENDED_STATUS> {read-only}
@@ -276,6 +324,10 @@ namespace helper {
       - {static} <T> ENDED_STATUS ended(T[], converter: Function<T, ENDED_STATUS>): ENDED_STATUS
       + {static} globalEnded(state: PLAYER[][]): ENDED_STATUS
       + {static} localEnded(state: PLAYER[]): ENDED_STATUS
+      + {static} calculateAlpha(useDecay: boolean, alpha: double, episodes: int, ep: int): double
+      + {static} calculateEpsilon(useDecay: boolean, epsilon: double, ep: int): double
+      + {static} boardToString(board: GlobalBoard): String
+      + {static} boardToString(board: GlobalBoard, globalCellIndex: int, localCellIndex: int): String
     }
 }
 @enduml
