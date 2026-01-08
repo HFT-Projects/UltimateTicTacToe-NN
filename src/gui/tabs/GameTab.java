@@ -670,6 +670,9 @@ public class GameTab extends Tab {
         int ties = 0, xWon = 0, oWon = 0, actor1Won = 0, actor2Won = 0;
         final BiFunction<PLAYER, Integer, ? extends Actor> originalActor1 = getActor1;
 
+        String actor1Name = getActor2.apply(PLAYER.X, 0) instanceof NNActor ? "NN 1" : "NN";
+        String actor2Name = getActor2.apply(PLAYER.O, 0) instanceof NNActor ? "NN 2" : "Algorithm";
+
         GUIUtils.runPlatformLaterBlocking(() -> {
             trainingResultStatsLabel.setVisible(true);
             trainingResultStatsLabel.setManaged(true);
@@ -686,7 +689,7 @@ public class GameTab extends Tab {
             final int fActor1Won = actor1Won;
             final int fActor2Won = actor2Won;
             Platform.runLater(() -> {
-                trainingResultStatsLabel.setText("Results (ONLY Training): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\nNN 1 Won: " + fActor1Won + "\nNN 2 Won: " + fActor2Won);
+                trainingResultStatsLabel.setText("Results (ONLY Training): \nTies: " + fTies + "\nX Won: " + fXWon + "\nO Won: " + fOWon + "\n" + actor1Name + " Won: " + fActor1Won + "\n" + actor2Name + " Won: " + fActor2Won);
                 trainingProgressBar.setProgress((double) finalI / count);
                 int trainingProgressSize = Integer.toString(count).length();
                 trainingProgressLabel.setText("Epoch " + String.format("%" + trainingProgressSize + "d", finalI) + "/" + count);
