@@ -6,6 +6,7 @@ import helper.Utils;
 import nn.activation.ActivationFunction;
 import nn.loss.LossFunction;
 import nn.trainer.FFNTrainer;
+import nn.trainer.FFNTrainerBGD;
 
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -147,6 +148,10 @@ public class FFN {
         ForwardReturn fwd = forward(state);
         double[][] delta = backward(target, fwd.a(), fwd.z());
         trainer.train(fwd.a(), fwd.z(), delta, b, W, layerSizes, learningRate);
+    }
+
+    public void applyTraining(FFNTrainerBGD trainer, double learningRate) {
+        trainer.applyTraining(b, W, learningRate);
     }
 
     public void save(String filepath) {

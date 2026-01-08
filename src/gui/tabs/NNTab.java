@@ -15,6 +15,7 @@ import nn.activation.*;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
 import nn.trainer.FFNTrainer;
+import nn.trainer.FFNTrainerBGD;
 import nn.trainer.FFNTrainerMBGD;
 import nn.trainer.FFNTrainerSGD;
 
@@ -179,7 +180,7 @@ public class NNTab extends Tab {
 
             Label lblTrainer = new Label("Trainer:");
             cbTrainer = new ComboBox<>();
-            cbTrainer.getItems().addAll("Stochastic Gradient Descent", "Mini Batch");
+            cbTrainer.getItems().addAll("Stochastic Gradient Descent", "Mini Batch", "Batch");
             cbTrainer.getSelectionModel().selectFirst();
 
             Label lblBatchSize = new Label("Batch size (int):");
@@ -278,6 +279,7 @@ public class NNTab extends Tab {
                         prefs.put("batch_size", Integer.toString(batchSize));
                         trainer = new FFNTrainerMBGD(net.layerSizes, batchSize);
                     }
+                    case "Batch" -> trainer = new FFNTrainerBGD(net.layerSizes);
                     default -> throw new InvalidParametersException("Invalid trainer selected.");
                 }
             } catch (NumberFormatException ex) {

@@ -3,6 +3,7 @@ package uttt.actor;
 import nn.FFN;
 
 import nn.trainer.FFNTrainer;
+import nn.trainer.FFNTrainerBGD;
 import uttt.board.ENDED_STATUS;
 import uttt.observer.Event;
 import helper.Utils;
@@ -131,6 +132,8 @@ public class NNActor extends Actor {
         if (event.globalEndedStatus() != null) {
             PLAYER[][] newState = event.newState();
             train(oldState, getStateWithBoardSelection(convertPlayerStateToCellState(newState), null), event.globalEndedStatus(), lastAction, null);
+            if (trainer instanceof FFNTrainerBGD bTrainer)
+                net.applyTraining(bTrainer, alpha);
         } else if (event.player() == getPlayer()) {
             oldLocalEndedStatus = event.localEndedStatus();
         }
