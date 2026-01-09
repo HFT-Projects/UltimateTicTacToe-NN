@@ -11,7 +11,7 @@ namespace nn {
     - delta: double[][] {final}
 
     + FFN(layerSizes: int[], hiddenActivation: ActivationFunction, outputActivation: ActivationFunction, lossFunction: LossFunction)
-    - initWeights(layerSizes: int[])
+    + FFN(layerSizes: int[], hiddenActivation: ActivationFunction, outputActivation: ActivationFunction, lossFunction: LossFunction, biasInitializer: BiasInitializer, weightInitializer: WeightInitializer)
     - forward(input: double[]): ForwardReturn
     - backward(yTrue: double[], a: double[][], z: double[][]): double[][]
     + predictQ(state: double[]): double[]
@@ -89,9 +89,56 @@ namespace nn {
     }
   }
 
+  namespace initialization {
+    abstract class BiasInitializer {
+      + {abstract} initializeBias(layerSizes: int[]): double[][]
+      + {abstract} equals(obj: Object): boolean
+      + hashCode(): int
+    }
+
+    class BiasInitializerNull extends BiasInitializer {
+      + initializeBias(layerSizes: int[]): double[][]
+      + equals(obj: Object): boolean
+    }
+    
+    class BiasInitializerRandom extends BiasInitializer {
+      ~rand: Random
+    
+      + initializeBias(layerSizes: int[]): double[][]
+      + equals(obj: Object): boolean
+    }
+    
+    class BiasInitializerVerySmall extends BiasInitializer {
+      + initializeBias(layerSizes: int[]): double[][]
+      + equals(obj: Object): boolean
+    }
+    
+    abstract class WeightInitializer {
+      + {abstract} initializeWeights(layerSizes: int[]): double[][][]
+      + {abstract} equals(obj: Object): boolean
+      + hashCode(): int
+    }
+    
+    class WeightInitializerGlorot extends WeightInitializer {
+      ~ rand: Random
+      
+      + initializeWeights(layerSizes: int[]): double[][][]
+      + equals(obj: Object): boolean
+    }
+    
+    class WeightInitializerRandom extends WeightInitializer {
+      ~ rand: Random
+
+      + initializeWeights(layerSizes: int[]): double[][][]
+      + equals(obj: Object): boolean
+    }
+  }
+
   FFN --> "1 hiddenActivation" activation.ActivationFunction
   FFN --> "1 outputActivation" activation.ActivationFunction
   FFN --> "1 lossFunction" loss.LossFunction
+  FFN --> "1 biasInitializer" initialization.BiasInitializer
+  FFN --> "1 weightInitializer" initialization.WeightInitializer
 }
 
 namespace uttt {
@@ -337,6 +384,10 @@ namespace helper {
       + {static} nameToActivation: Map<String, ActivationFunction> {read-only}
       + {static} lossToName: Map<LossFunction, String> {read-only}
       + {static} nameToLoss: Map<String, LossFunction> {read-only}
+      + {static} biasInitializerToName: Map<BiasInitializer, String> {read-only}
+      + {static} nameToBiasInitializer: Map<String, BiasInitializer> {read-only}
+      + {static} weightInitializerToName: Map<WeightInitializer, String> {read-only}
+      + {static} nameToWeightInitializer: Map<String, WeightInitializer> {read-only}
       - {static} wins: int[][] {read-only}
 
       - Utils()

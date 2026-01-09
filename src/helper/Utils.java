@@ -1,6 +1,7 @@
 package helper;
 
 import nn.activation.*;
+import nn.initialization.*;
 import nn.loss.*;
 import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
@@ -25,6 +26,12 @@ public final class Utils {
 
     public static final Map<LossFunction, String> lossToName;
     public static final Map<String, LossFunction> nameToLoss;
+
+    public static final Map<BiasInitializer, String> biasInitializerToName;
+    public static final Map<String, BiasInitializer> nameToBiasInitializer;
+
+    public static final Map<WeightInitializer, String> weightInitializerToName;
+    public static final Map<String, WeightInitializer> nameToWeightInitializer;
 
     static {
         // create unmodifiable maps for conversions
@@ -68,6 +75,29 @@ public final class Utils {
             nameToLossTemp.put(lossToNameTemp.get(lf), lf);
         }
         nameToLoss = Collections.unmodifiableMap(nameToLossTemp);
+
+        Map<BiasInitializer, String> biasInitializerToNameTemp = new java.util.LinkedHashMap<>();
+        biasInitializerToNameTemp.put(new BiasInitializerRandom(), "Random");
+        biasInitializerToNameTemp.put(new BiasInitializerNull(), "Null");
+        biasInitializerToNameTemp.put(new BiasInitializerVerySmall(), "Very Small");
+        biasInitializerToName = Collections.unmodifiableMap(biasInitializerToNameTemp);
+
+        Map<String, BiasInitializer> nameToBiasInitializerTemp = new java.util.LinkedHashMap<>();
+        for (BiasInitializer lf : biasInitializerToName.keySet()) {
+            nameToBiasInitializerTemp.put(biasInitializerToNameTemp.get(lf), lf);
+        }
+        nameToBiasInitializer = Collections.unmodifiableMap(nameToBiasInitializerTemp);
+
+        Map<WeightInitializer, String> weightInitializerToNameTemp = new java.util.LinkedHashMap<>();
+        weightInitializerToNameTemp.put(new WeightInitializerRandom(), "Random");
+        weightInitializerToNameTemp.put(new WeightInitializerGlorot(), "Glorot");
+        weightInitializerToName = Collections.unmodifiableMap(weightInitializerToNameTemp);
+
+        Map<String, WeightInitializer> nameToWeightInitializerTemp = new java.util.LinkedHashMap<>();
+        for (WeightInitializer lf : weightInitializerToName.keySet()) {
+            nameToWeightInitializerTemp.put(weightInitializerToNameTemp.get(lf), lf);
+        }
+        nameToWeightInitializer = Collections.unmodifiableMap(nameToWeightInitializerTemp);
     }
 
     private static final int[][] wins = {

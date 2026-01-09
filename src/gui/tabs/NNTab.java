@@ -12,6 +12,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import nn.FFN;
 import nn.activation.*;
+import nn.initialization.*;
 import nn.loss.LossFunction;
 import nn.loss.MeanSquaredError;
 import nn.trainer.FFNTrainer;
@@ -44,6 +45,8 @@ public class NNTab extends Tab {
         private final CheckBox cbEpsilonDecay;
         private final ComboBox<String> cbTrainer;
         private final TextField tfBatchSize;
+        private final ComboBox<String> cbBiasInitalizer;
+        private final ComboBox<String> cbWeightInitalizer;
 
         public NNPanel(String title, Preferences prefs) {
             this.prefs = prefs;
@@ -75,6 +78,21 @@ public class NNTab extends Tab {
             cbLoss = new ComboBox<>();
             cbLoss.getItems().addAll(Utils.nameToLoss.keySet());
             cbLoss.getSelectionModel().selectFirst();
+
+            // initializors
+            Label lblBiasInitializer = new Label("Bias-Initializer:");
+            cbBiasInitalizer = new ComboBox<>();
+            cbBiasInitalizer.getItems().addAll("Random", "Null", "Very Small");
+            cbBiasInitalizer.getSelectionModel().selectFirst();
+            Label lblWeightInitializer = new Label("Weight-Initializer:");
+            cbWeightInitalizer = new ComboBox<>();
+            cbWeightInitalizer.getItems().addAll("Random", "Glorot");
+            cbWeightInitalizer.getSelectionModel().selectFirst();
+
+            HBox initializerRow = new HBox();
+            initializerRow.setSpacing(10);
+            initializerRow.setAlignment(Pos.CENTER_LEFT);
+            initializerRow.getChildren().addAll(lblBiasInitializer, cbBiasInitalizer, lblWeightInitializer, cbWeightInitalizer);
 
             // Error / info labels
             Label lblError = new Label();
@@ -116,6 +134,8 @@ public class NNTab extends Tab {
 
                 String act = cbAct.getValue();
                 String loss = cbLoss.getValue();
+                String bias = cbBiasInitalizer.getValue();
+                String weight = cbWeightInitalizer.getValue();
 
                 final int inputSize = 18 * 9 + 9 * selectionMultiplier;
                 final int outputSize = 9;
@@ -125,8 +145,10 @@ public class NNTab extends Tab {
                 final ActivationFunction hiddenActivations = Utils.nameToActivation.get(act);
                 final ActivationFunction outputActivation = new IdentityFunction(); // SHOULD NOT BE CHANGED
                 final LossFunction lossFunction = Utils.nameToLoss.get(loss);
+                final BiasInitializer biasInitializer = Utils.nameToBiasInitializer.get(bias);
+                final WeightInitializer weightInitializer = Utils.nameToWeightInitializer.get(weight);
 
-                net = new FFN(layerSizes, hiddenActivations, outputActivation, lossFunction);
+                net = new FFN(layerSizes, hiddenActivations, outputActivation, lossFunction, biasInitializer, weightInitializer);
 
                 afterNetExists();
             });
@@ -161,6 +183,8 @@ public class NNTab extends Tab {
                 btnImport.setDisable(false);
                 btnExport.setDisable(true);
                 btnDelete.setDisable(true);
+                cbBiasInitalizer.setDisable(false);
+                cbWeightInitalizer.setDisable(false);
             });
 
             HBox buttonRow = new HBox();
@@ -200,6 +224,7 @@ public class NNTab extends Tab {
                     lblSelectionMultiplier, tfSelectionMultiplier,
                     lblAct, cbAct,
                     lblLoss, cbLoss,
+                    initializerRow,
                     lblError,
                     lblSummary,
                     buttonRow,
@@ -224,6 +249,8 @@ public class NNTab extends Tab {
             cbEpsilonDecay.setSelected(prefs.get("epsilon_decay", "false").equals("true"));
             cbTrainer.setValue(prefs.get("trainer", cbTrainer.getItems().getFirst()));
             tfBatchSize.setText(prefs.get("batch_size", "32"));
+            cbBiasInitalizer.setValue(prefs.get("bias_initializer", cbBiasInitalizer.getItems().getFirst()));
+            cbWeightInitalizer.setValue(prefs.get("weight_initializer", cbWeightInitalizer.getItems().getFirst()));
         }
 
         private void afterNetExists() {
@@ -238,11 +265,15 @@ public class NNTab extends Tab {
 
             cbAct.setValue(Utils.activationToName.get(net.hiddenActivation));
             cbLoss.setValue(Utils.lossToName.get(net.lossFunction));
+            cbBiasInitalizer.setValue(Utils.biasInitializerToName.get(net.biasInitializer));
+            cbWeightInitalizer.setValue(Utils.weightInitializerToName.get(net.weightInitializer));
 
             prefs.put("hidden_sizes", tfHidden.getText().trim());
             prefs.put("selection_multiplier", tfSelectionMultiplier.getText().trim());
             prefs.put("activation", cbAct.getValue());
             prefs.put("loss", cbLoss.getValue());
+            prefs.put("bias_initializer", cbBiasInitalizer.getValue());
+            prefs.put("weight_initializer", cbWeightInitalizer.getValue());
 
             tfHidden.setDisable(true);
             tfSelectionMultiplier.setDisable(true);
@@ -252,6 +283,8 @@ public class NNTab extends Tab {
             btnImport.setDisable(true);
             btnExport.setDisable(false);
             btnDelete.setDisable(false);
+            cbBiasInitalizer.setDisable(true);
+            cbWeightInitalizer.setDisable(true);
         }
 
         public VBox getPane() {
@@ -266,6 +299,8 @@ public class NNTab extends Tab {
             double alpha, gamma, epsilon;
             FFNTrainer trainer;
             boolean alphaDecay, epsilonDecay;
+            BiasInitializer biasInitializer;
+            WeightInitializer weightInitializer;
             try {
                 alpha = Double.parseDouble(tfAlpha.getText().trim().replace(",", "."));
                 alphaDecay = cbAlphaDecay.isSelected();
@@ -282,6 +317,17 @@ public class NNTab extends Tab {
                     case "Batch" -> trainer = new FFNTrainerBGD(net.layerSizes);
                     default -> throw new InvalidParametersException("Invalid trainer selected.");
                 }
+                switch (cbBiasInitalizer.getValue()) {
+                    case "Random" -> biasInitializer = new BiasInitializerRandom();
+                    case "Null" -> biasInitializer = new BiasInitializerNull();
+                    case "Very Small" -> biasInitializer = new BiasInitializerVerySmall();
+                    default -> throw new InvalidParametersException("Invalid bias initializer selected.");
+                }
+                switch (cbWeightInitalizer.getValue()) {
+                    case "Random" -> weightInitializer = new WeightInitializerRandom();
+                    case "Glorot" -> weightInitializer = new WeightInitializerGlorot();
+                    default -> throw new InvalidParametersException("Invalid bias initializer selected.");
+                }
             } catch (NumberFormatException ex) {
                 throw new InvalidParametersException("Invalid NN parameters input for NN " + title + ". Alpha, gamma, epsilon, trainer & batchSize must be valid numbers.");
             }
@@ -292,9 +338,11 @@ public class NNTab extends Tab {
             prefs.put("epsilon", Double.toString(epsilon));
             prefs.put("epsilon_decay", Boolean.toString(epsilonDecay));
             prefs.put("trainer", cbTrainer.getValue());
+            prefs.put("bias_initializer", cbBiasInitalizer.getValue());
+            prefs.put("weight_initializer", cbWeightInitalizer.getValue());
 
 
-            return new NNParameters(alpha, gamma, epsilon, alphaDecay, epsilonDecay, trainer);
+            return new NNParameters(alpha, gamma, epsilon, alphaDecay, epsilonDecay, trainer, biasInitializer, weightInitializer);
         }
     }
 
@@ -354,7 +402,7 @@ public class NNTab extends Tab {
     }
 
     public record NNParameters(double alpha, double gamma, double epsilon, boolean alphaDecay, boolean epsilonDecay,
-                               FFNTrainer trainer) {
+                               FFNTrainer trainer, BiasInitializer biasInitializer, WeightInitializer weightInitializer) {
     }
 
     public NNParameters getNNParameters(int idx) {

@@ -4,6 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import helper.Utils;
 import nn.activation.ActivationFunction;
+import nn.initialization.BiasInitializer;
+import nn.initialization.BiasInitializerRandom;
+import nn.initialization.WeightInitializer;
+import nn.initialization.WeightInitializerRandom;
 import nn.loss.LossFunction;
 import nn.trainer.FFNTrainer;
 import nn.trainer.FFNTrainerBGD;
@@ -13,12 +17,11 @@ import java.util.*;
 
 
 public class FFN {
-    private static final long SEED = 42L;
-    private final Random rand = new Random();
-
     public final ActivationFunction hiddenActivation;
     public final ActivationFunction outputActivation;
     public final LossFunction lossFunction;
+    public final BiasInitializer biasInitializer;
+    public final WeightInitializer weightInitializer;
 
     public final int[] layerSizes;
     private final double[][][] W; // weights: W[l][j][i]
@@ -31,29 +34,25 @@ public class FFN {
     private final double[][] z; // pre-activations: z[l][j]
     private final double[][] delta; // deltas: delta[l][j]
 
-    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation, LossFunction lossFunction) {
-        rand.setSeed(SEED);
+    @SuppressWarnings("unused")
+    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation,
+               LossFunction lossFunction) {
+        this(layerSizes, hiddenActivation, outputActivation, lossFunction, new BiasInitializerRandom(),
+                new WeightInitializerRandom());
+    }
 
+    public FFN(int[] layerSizes, ActivationFunction hiddenActivation, ActivationFunction outputActivation,
+               LossFunction lossFunction, BiasInitializer biasInitializer, WeightInitializer weightInitializer) {
         this.layerSizes = layerSizes.clone();
 
         this.hiddenActivation = hiddenActivation;
         this.outputActivation = outputActivation;
         this.lossFunction = lossFunction;
+        this.biasInitializer = biasInitializer;
+        this.weightInitializer = weightInitializer;
 
-        W = new double[layerSizes.length][][];
-        b = new double[layerSizes.length][];
-
-        W[0] = null;
-        b[0] = null;
-
-        for (int l = 1; l < layerSizes.length; l++) {
-            int nIn = layerSizes[l - 1];
-            int nOut = layerSizes[l];
-            W[l] = new double[nOut][nIn];
-            b[l] = new double[nOut];
-        }
-
-        initWeights(layerSizes);
+        W = weightInitializer.initializeWeights(layerSizes);
+        b = biasInitializer.initializeBias(layerSizes);
 
         a = new double[layerSizes.length][];
         z = new double[layerSizes.length][];
@@ -67,19 +66,6 @@ public class FFN {
         delta = new double[layerSizes.length][];
         for (int i = 1; i < layerSizes.length; i++) {
             delta[i] = new double[layerSizes[i]];
-        }
-    }
-
-    private void initWeights(int[] layerSizes) {
-        for (int l = 1; l < layerSizes.length; l++) {
-            int nIn = layerSizes[l - 1];
-            int nOut = layerSizes[l];
-            for (int j = 0; j < nOut; j++) {
-                b[l][j] = (rand.nextDouble() - 0.5);
-                for (int i = 0; i < nIn; i++) {
-                    W[l][j][i] = (rand.nextDouble() - 0.5);
-                }
-            }
         }
     }
 
@@ -162,6 +148,8 @@ public class FFN {
         jsonO.put("hiddenActivation", Utils.activationToName.get(hiddenActivation));
         jsonO.put("outputActivation", Utils.activationToName.get(outputActivation));
         jsonO.put("lossFunction", Utils.lossToName.get(lossFunction));
+        jsonO.put("biasInitializer", Utils.biasInitializerToName.get(biasInitializer));
+        jsonO.put("weightInitializer", Utils.weightInitializerToName.get(weightInitializer));
 
         try {
             String json = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(jsonO);
@@ -216,7 +204,10 @@ public class FFN {
             ActivationFunction outputActivation = Utils.nameToActivation.get((String) map.get("outputActivation"));
             LossFunction lossFunction = Utils.nameToLoss.get((String) map.get("lossFunction"));
 
-            FFN ffn = new FFN(layerSizes, hiddenActivation, outputActivation, lossFunction);
+            BiasInitializer biasInitializer = map.containsKey("biasInitializer") ? Utils.nameToBiasInitializer.get((String) map.get("biasInitializer")) : new BiasInitializerRandom();
+            WeightInitializer weightInitializer = map.containsKey("weightInitializer") ? Utils.nameToWeightInitializer.get((String) map.get("weightInitializer")) : new WeightInitializerRandom();
+
+            FFN ffn = new FFN(layerSizes, hiddenActivation, outputActivation, lossFunction, biasInitializer, weightInitializer);
             System.arraycopy(W, 0, ffn.W, 0, W.length);
             System.arraycopy(b, 0, ffn.b, 0, b.length);
 
