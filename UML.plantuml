@@ -36,11 +36,11 @@ namespace nn {
 
   namespace trainer {
     interface FFNTrainer {
-      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+      + train(a: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
     }
 
     class FFNTrainerSGD implements FFNTrainer {
-      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+      + train(a: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
       - updateWeights(delta: double[][], a: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
     }
 
@@ -52,7 +52,7 @@ namespace nn {
       - layerSizes: int[] {read-only}
 
       + FFNTrainerMBGD(layerSizes: int[], miniBatchSize: int)
-      + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+      + train(a: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
       - updateWeights(learningRate: double, b: double[][], W: double[][][], layerSizes: int[])
       - resetGradients(layerSizes: int[])
     }
@@ -64,7 +64,7 @@ namespace nn {
           - layerSizes: int[] {read-only}
 
           + FFNTrainerBGD(layerSizes: int[])
-          + train(a: double[][], z: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
+          + train(a: double[][], delta: double[][], b: double[][], W: double[][][], layerSizes: int[], learningRate: double)
           + applyTraining(double[][] b, double[][][] W, double learningRate)
           - updateWeights(b: double[][], W: double[][][], learningRate: double)
           - resetGradients(layerSizes: int[])
@@ -102,7 +102,7 @@ namespace nn {
     }
     
     class BiasInitializerRandom extends BiasInitializer {
-      ~rand: Random
+      - rand: Random {final}
     
       + initializeBias(layerSizes: int[]): double[][]
       + equals(obj: Object): boolean
@@ -120,14 +120,14 @@ namespace nn {
     }
     
     class WeightInitializerGlorot extends WeightInitializer {
-      ~ rand: Random
+      - rand: Random {final}
       
       + initializeWeights(layerSizes: int[]): double[][][]
       + equals(obj: Object): boolean
     }
     
     class WeightInitializerRandom extends WeightInitializer {
-      ~ rand: Random
+      - rand: Random {final}
 
       + initializeWeights(layerSizes: int[]): double[][][]
       + equals(obj: Object): boolean
@@ -317,20 +317,20 @@ namespace uttt {
 
   namespace algorithms {
     abstract class BruteForcer {
-      # x_wins: int = 0
-      # o_wins: int = 0
+      # xWins: int = 0
+      # oWins: int = 0
       # ties: int = 0
       # exploredStates: long = 0
       # endStates: int = 0
-      + earlyReturn: boolean = false
-      + maxDepth: boolean = Integer.MAX_VALUE
-      + maxStates: boolean = Integer.MAX_VALUE
-      + printProgress: boolean = false
+      - earlyReturn: boolean = false {read-only}
+      - maxDepth: boolean = Integer.MAX_VALUE {read-only}
+      - maxStates: boolean = Integer.MAX_VALUE {read-only}
+      - printProgress: boolean = false {read-only}
       + maxEndStates: int = Integer.MAX_VALUE
 
       + BruteForcer()
-      + getX_wins(): int
-      + getO_wins(): int
+      + getXwins(): int
+      + getOwins(): int
       + getTies: int
       + resetStats()
       # incrementStats(end: ENDED_STATUS)
@@ -339,14 +339,14 @@ namespace uttt {
 
     class DFS extends BruteForcer {
       - r: Random {final}
-      ~ deepestDepth: int
-      + randomTraversal: boolean = true
+      - deepestDepth: int
+      - randomTraversal: boolean = true {read-only}
 
       + DFS()
       + bruteForce(gb: PLAYER[][], player: PLAYER, idx: byte)
-      + depthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
+      - depthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
       - traverseAllPaths(l: PLAYER[], currentPlayer: PLAYER, baseState: PLAYER[][], currentDepth: int)
-      + randomDepthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
+      - randomDepthTraversal(baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int, currentDepth: int)
       - traverseRandomPath(l: PLAYER[], currentPlayer: PLAYER, baseState: PLAYER[][], currentDepth: int)
     }
 
@@ -356,7 +356,7 @@ namespace uttt {
 
       + BFS()
       + bruteForce(gb: PLAYER[][], player: PLAYER, idx: byte)
-      + breadthTraversal(n: Node, baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int)
+      - breadthTraversal(n: Node, baseState: PLAYER[][], startPlayer: PLAYER, localBoardIdx: int)
     }
 
     record BFS::Node {

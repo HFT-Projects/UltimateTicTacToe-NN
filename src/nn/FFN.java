@@ -133,7 +133,7 @@ public class FFN {
     public void train(FFNTrainer trainer, double[] state, double[] target, double learningRate) {
         ForwardReturn fwd = forward(state);
         double[][] delta = backward(target, fwd.a(), fwd.z());
-        trainer.train(fwd.a(), fwd.z(), delta, b, W, layerSizes, learningRate);
+        trainer.train(fwd.a(), delta, b, W, layerSizes, learningRate);
     }
 
     public void applyTraining(FFNTrainerBGD trainer, double learningRate) {
@@ -177,25 +177,25 @@ public class FFN {
             Map<String, Object> map = new ObjectMapper().readValue(json, Map.class);
 
             @SuppressWarnings("unchecked")
-            double[][][] Wwithout0 = ((List<List<List<Double>>>) map.get("W")).stream().skip(1)
+            double[][][] WWithout0 = ((List<List<List<Double>>>) map.get("W")).stream().skip(1)
                     .map(l2 -> l2.stream()
                             .map(l1 -> l1.stream().mapToDouble(Double::doubleValue).toArray())
                             .toArray(double[][]::new))
                     .toArray(double[][][]::new);
 
-            double[][][] W = new double[Wwithout0.length + 1][][];
+            double[][][] W = new double[WWithout0.length + 1][][];
             W[0] = null;
-            System.arraycopy(Wwithout0, 0, W, 1, Wwithout0.length);
+            System.arraycopy(WWithout0, 0, W, 1, WWithout0.length);
 
 
             @SuppressWarnings("unchecked")
-            double[][] bwithout0 = ((List<List<Double>>) map.get("b")).stream().skip(1)
+            double[][] bWithout0 = ((List<List<Double>>) map.get("b")).stream().skip(1)
                     .map(l1 -> l1.stream().mapToDouble(Double::doubleValue).toArray())
                     .toArray(double[][]::new);
 
-            double[][] b = new double[bwithout0.length + 1][];
+            double[][] b = new double[bWithout0.length + 1][];
             b[0] = null;
-            System.arraycopy(bwithout0, 0, b, 1, bwithout0.length);
+            System.arraycopy(bWithout0, 0, b, 1, bWithout0.length);
 
             @SuppressWarnings("unchecked")
             int[] layerSizes = ((List<Integer>) map.get("layerSizes")).stream().mapToInt(Integer::intValue).toArray();

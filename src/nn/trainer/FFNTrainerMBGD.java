@@ -2,7 +2,6 @@ package nn.trainer;
 
 import java.util.Arrays;
 
-@SuppressWarnings("unused")
 public class FFNTrainerMBGD implements FFNTrainer {
     private final int miniBatchSize;
     private int miniBatchCounter = 0;
@@ -26,7 +25,8 @@ public class FFNTrainerMBGD implements FFNTrainer {
         }
     }
 
-    public void train(double[][] a, double[][] z, double[][] delta, double[][] b, double[][][] W, int[] layerSizes, double learningRate) {
+    @SuppressWarnings("DuplicatedCode")
+    public void train(double[][] a, double[][] delta, double[][] b, double[][][] W, int[] layerSizes, double learningRate) {
         if (!Arrays.equals(this.layerSizes, layerSizes))
             throw new IllegalArgumentException("Layer sizes do not match trainer configuration.");
 
@@ -49,6 +49,7 @@ public class FFNTrainerMBGD implements FFNTrainer {
         }
     }
 
+    @SuppressWarnings("DuplicatedCode")
     private void updateWeights(double learningRate, double[][] b, double[][][] W, int[] layerSizes) {
         for (int l = 1; l < gradB.length; l++) {
             for (int j = 0; j < layerSizes[l]; j++) {

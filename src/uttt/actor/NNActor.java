@@ -104,16 +104,16 @@ public class NNActor extends Actor {
 
         int reward = calculateReward(globalEndedStatus, oldLocalEndedStatus);
 
-        double[] q_s = net.predictQ(state);
-        double[] q_sp = net.predictQ(newState);
+        double[] qS = net.predictQ(state);
+        double[] qSp = net.predictQ(newState);
 
-        double[] target = q_s.clone();
+        double[] target = qS.clone();
 
         double targetValue;
         if (globalEndedStatus != null) {
             targetValue = reward;
         } else {
-            double maxNext = q_sp[predict(newState, playableActions)];
+            double maxNext = qSp[predict(newState, playableActions)];
             targetValue = reward + gamma * maxNext;
         }
 

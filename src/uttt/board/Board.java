@@ -7,8 +7,8 @@ import java.lang.reflect.Array;
 public abstract class Board<T> {
     final protected T[] board;
 
-    @SuppressWarnings("unchecked")
     public Board(@NonNull Class<T> cls) {
+        //noinspection unchecked
         board = (T[]) Array.newInstance(cls, 9);
     }
 
@@ -16,5 +16,6 @@ public abstract class Board<T> {
         return board[idx];
     }
 
+    @SuppressWarnings("unused")
     public abstract ENDED_STATUS calculateEndedStatus();
 }

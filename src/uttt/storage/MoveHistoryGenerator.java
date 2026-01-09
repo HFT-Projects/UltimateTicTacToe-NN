@@ -5,7 +5,6 @@ import uttt.observer.Event;
 import java.util.LinkedList;
 import java.util.List;
 
-@SuppressWarnings("unused")
 public class MoveHistoryGenerator {
     private final List<Move> history = new LinkedList<>();
 

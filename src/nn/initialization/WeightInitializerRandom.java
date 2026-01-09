@@ -3,8 +3,9 @@ package nn.initialization;
 import java.util.Random;
 
 public class WeightInitializerRandom extends WeightInitializer {
-    Random rand = new Random();
+    private final Random rand = new Random();
 
+    @SuppressWarnings("DuplicatedCode")
     @Override
     public double[][][] initializeWeights(int[] layerSizes) {
         double[][][] W = new double[layerSizes.length][][];

@@ -4,18 +4,18 @@ import uttt.actor.PLAYER;
 import uttt.board.ENDED_STATUS;
 
 public abstract class BruteForcer {
-    protected int x_wins = 0;
-    protected int o_wins = 0;
+    protected int xWins = 0;
+    protected int oWins = 0;
     protected int ties = 0;
     protected long exploredStates = 0;
     protected int endStates = 0;
 
-    public int getX_wins() {
-        return x_wins;
+    public int getxWins() {
+        return xWins;
     }
 
-    public int getO_wins() {
-        return o_wins;
+    public int getoWins() {
+        return oWins;
     }
 
     public int getTies() {
@@ -23,8 +23,8 @@ public abstract class BruteForcer {
     }
 
     public void resetStats() {
-        x_wins = 0;
-        o_wins = 0;
+        xWins = 0;
+        oWins = 0;
         ties = 0;
         exploredStates = 0;
         endStates = 0;
@@ -36,11 +36,13 @@ public abstract class BruteForcer {
     /**
      * Only make sense when using breadth search
      */
-    public boolean earlyReturn;
-    public int maxDepth;
-    public int maxStates;
-    public boolean printProgress;
-    /** Number of terminating (end) states found after program terminates */
+    protected final boolean earlyReturn;
+    protected final int maxDepth;
+    protected final int maxStates;
+    protected final boolean printProgress;
+    /**
+     * Number of terminating (end) states found after program terminates
+     */
     public int maxEndStates;
 
     public BruteForcer() {
@@ -54,10 +56,10 @@ public abstract class BruteForcer {
     protected void incrementStats(ENDED_STATUS end) {
         switch (end) {
             case O:
-                o_wins++;
+                oWins++;
                 break;
             case X:
-                x_wins++;
+                xWins++;
                 break;
             case TIE:
                 ties++;
@@ -67,6 +69,9 @@ public abstract class BruteForcer {
         }
     }
 
-    /** This assumes that the state is NEVER a full board */
+    /**
+     * This assumes that the state is NEVER a full board
+     */
+    @SuppressWarnings("unused")
     public abstract void bruteForce(PLAYER[][] gb, PLAYER player, byte idx);
 }

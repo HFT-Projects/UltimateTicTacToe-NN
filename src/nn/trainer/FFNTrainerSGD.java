@@ -1,7 +1,7 @@
 package nn.trainer;
 
 public class FFNTrainerSGD implements FFNTrainer {
-    public void train(double[][] a, double[][] z, double[][] delta, double[][] b, double[][][] W, int[] layerSizes, double learningRate) {
+    public void train(double[][] a, double[][] delta, double[][] b, double[][][] W, int[] layerSizes, double learningRate) {
         updateWeights(delta, a, b, W, layerSizes, learningRate);
     }
 

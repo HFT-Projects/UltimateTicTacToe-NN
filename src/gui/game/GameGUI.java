@@ -54,7 +54,7 @@ public class GameGUI {
         pane.getChildren().setAll(globalBoard.getPane(), statusLabel, stepLabel);
     }
 
-    public ENDED_STATUS run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, @Nullable Actor predictor, Runnable onComplete) {
+    public void run(@NonNull Actor actorX, @NonNull Actor actorO, @Nullable GUIActor guiActor, @Nullable Actor predictor, Runnable onComplete) {
         if (ran)
             throw new RuntimeException("GameGUI can only run / load once per instance.");
         ran = true;
@@ -86,8 +86,6 @@ public class GameGUI {
 
         GUIUtils.runPlatformLaterBlocking(() -> onGameEnded(result));
         onComplete.run();
-
-        return result;
     }
 
     // GUI API: return the node to embed in a parent layout
@@ -95,7 +93,7 @@ public class GameGUI {
         return pane;
     }
 
-    public int moveEvent(@SuppressWarnings("unused") PLAYER[][] state, int localBoardSel, int[] playableActions) {
+    public int moveEvent(PLAYER[][] state, int localBoardSel, int[] playableActions) {
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Choose your cell!"));
         Integer predictedMove = null;
         if (predictor != null)
@@ -105,7 +103,7 @@ public class GameGUI {
         return action;
     }
 
-    public int chooseBoardEvent(@SuppressWarnings("unused") PLAYER[][] state, int[] playableBoards) {
+    public int chooseBoardEvent(PLAYER[][] state, int[] playableBoards) {
         GUIUtils.runPlatformLaterBlocking(() -> statusLabel.setText("You play as " + guiActor.getPlayer() + " - Choose your board!"));
         Integer predictedBoard = null;
         if (predictor != null)

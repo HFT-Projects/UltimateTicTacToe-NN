@@ -20,6 +20,8 @@ public class StorageManagerTest {
                 new Move(PLAYER.X, 8, 7, null, null)
         };
 
+
+        @SuppressWarnings("SpellCheckingInspection")
         Path tmp = Files.createTempFile("storagemanager-test", ".json");
         try {
             StorageManager.save(original, tmp.toString());

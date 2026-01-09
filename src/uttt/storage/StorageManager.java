@@ -9,7 +9,6 @@ import uttt.board.ENDED_STATUS;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-@SuppressWarnings("unused")
 public final class StorageManager {
     private StorageManager() {
     }

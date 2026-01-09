@@ -8,7 +8,6 @@ import javafx.scene.control.TabPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
-import java.awt.*;
 import java.io.File;
 import java.util.prefs.Preferences;
 

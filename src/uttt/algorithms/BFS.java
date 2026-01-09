@@ -9,7 +9,7 @@ import java.util.*;
 
 @SuppressWarnings("unused")
 public class BFS extends BruteForcer {
-    public record Node(List<int[]> actions) {
+    private record Node(List<int[]> actions) {
     }
 
     private final Queue<Node> toExplore = new ArrayDeque<>();
@@ -47,10 +47,10 @@ public class BFS extends BruteForcer {
             }
         }
 
-        System.out.printf("Done with breadth traversal: searched %d states, %d ended in a TIE, %d in wins for x, %d in wins for o", exploredStates, ties, x_wins, o_wins);
+        System.out.printf("Done with breadth traversal: searched %d states, %d ended in a TIE, %d in wins for x, %d in wins for o", exploredStates, ties, xWins, oWins);
     }
 
-    public void breadthTraversal(@Nullable Node n, PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx) {
+    private void breadthTraversal(@Nullable Node n, PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx) {
         PLAYER currentPlayer = startPlayer;
         int currentIndex = localBoardIdx;
         if (n != null) {

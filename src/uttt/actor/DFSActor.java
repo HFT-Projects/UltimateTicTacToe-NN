@@ -27,7 +27,7 @@ public class DFSActor extends Actor {
             // simulate move
             l[action] = this.getPlayer();
             // calculate win chance
-            algo.bruteForce(state, this.getPlayer() == PLAYER.X ? PLAYER.O : PLAYER.X, (byte)action);
+            algo.bruteForce(state, this.getPlayer() == PLAYER.X ? PLAYER.O : PLAYER.X, (byte) action);
             // check if win chance is highest for this selection -> set if yes
             scorePerSelection.put(action, getScore());
             // undo move
@@ -56,7 +56,7 @@ public class DFSActor extends Actor {
                 // simulate move
                 l[j] = this.getPlayer();
                 // calculate win chance
-                algo.bruteForce(state, this.getPlayer() == PLAYER.X ? PLAYER.O : PLAYER.X, (byte)j);
+                algo.bruteForce(state, this.getPlayer() == PLAYER.X ? PLAYER.O : PLAYER.X, (byte) j);
                 // check if win chance is highest for this selection -> set if yes
                 double score = getScore();
                 if (!scorePerBoard.containsKey(playableBoard) || scorePerBoard.get(playableBoard) < score) {
@@ -75,13 +75,13 @@ public class DFSActor extends Actor {
     }
 
     private double getScore() {
-        return getWins() + (1f/3 * (double)algo.getTies());
+        return getWins() + (1f / 3 * (double) algo.getTies());
     }
 
     private int getWins() {
         return switch (this.getPlayer()) {
-            case X -> algo.getX_wins();
-            case O -> algo.getO_wins();
+            case X -> algo.getxWins();
+            case O -> algo.getoWins();
         };
     }
 }

@@ -9,14 +9,15 @@ import java.util.Random;
 /**
  * Default behavior is searching path randomly from the "top" until it ends
  */
-public class DFS extends BruteForcer{
-    int deepestDepth;
+public class DFS extends BruteForcer {
+    private int deepestDepth;
     private final Random r = new Random();
 
     /**
      * if set to false, make sure to set maxEndStates to Integer.MAX_VALUE otherwise the algorithm will end too early
      */
-    public boolean randomTraversal = true;
+    @SuppressWarnings("FieldCanBeLocal")
+    private final boolean randomTraversal = true;
 
     public DFS() {
         maxEndStates = 1000;
@@ -36,16 +37,18 @@ public class DFS extends BruteForcer{
         }
 
         if (printProgress) {
-            System.out.printf("Done with depth traversal: searched %d states, %d ended in a TIE, %d in wins for x, %d in wins for o%n", exploredStates, ties, x_wins, o_wins);
+            System.out.printf("Done with depth traversal: searched %d states, %d ended in a TIE, %d in wins for x, %d in wins for o%n", exploredStates, ties, xWins, oWins);
             System.out.printf("Stats: X wins to %.2f%% - O wins to %.2f%% - Ties to %.2f%%",
-                    ((float)x_wins / endStates) * 100,
-                    ((float)o_wins / endStates) * 100,
-                    ((float)ties / endStates) * 100);
+                    ((float) xWins / endStates) * 100,
+                    ((float) oWins / endStates) * 100,
+                    ((float) ties / endStates) * 100);
         }
     }
 
-    /** recursive traversal */
-    public void depthTraversal(PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx, int currentDepth) {
+    /**
+     * recursive traversal
+     */
+    private void depthTraversal(PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx, int currentDepth) {
         if (exploredStates >= maxStates || currentDepth > maxDepth || endStates >= maxEndStates) {
             return;
         }
@@ -75,7 +78,7 @@ public class DFS extends BruteForcer{
             return;
         }
 
-       traverseAllPaths(l, startPlayer, baseState, currentDepth);
+        traverseAllPaths(l, startPlayer, baseState, currentDepth);
     }
 
     private void traverseAllPaths(PLAYER[] l, PLAYER currentPlayer, PLAYER[][] baseState, int currentDepth) {
@@ -91,8 +94,10 @@ public class DFS extends BruteForcer{
         }
     }
 
-    /** travels randomly down one path in the tree */
-    public void randomDepthTraversal(PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx, int currentDepth) {
+    /**
+     * travels randomly down one path in the tree
+     */
+    private void randomDepthTraversal(PLAYER[][] baseState, PLAYER startPlayer, int localBoardIdx, int currentDepth) {
         if (exploredStates >= maxStates || currentDepth > maxDepth) {
             return;
         }
@@ -111,7 +116,7 @@ public class DFS extends BruteForcer{
         PLAYER[] l = baseState[localBoardIdx];
         if (Utils.localEnded(l) != null) {
             // break after one not ended board is found and one path is followed
-            for (;;) {
+            for (; ; ) {
                 int i = r.nextInt(9);
                 l = baseState[i];
                 if (Utils.localEnded(l) != null)

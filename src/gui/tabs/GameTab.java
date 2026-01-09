@@ -29,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.prefs.Preferences;
 
+@SuppressWarnings("DuplicatedCode")
 public class GameTab extends Tab {
     private static class ExcHandled extends Exception {
     }
@@ -160,6 +161,7 @@ public class GameTab extends Tab {
             }
         });
     }
+
 
     private VBox createModeSelectionPanel() {
         VBox modePanel = new VBox(10);
@@ -447,14 +449,15 @@ public class GameTab extends Tab {
         };
     }
 
+
     private void runNNvsNNGame() throws NNNotProvidedException, ExcHandled {
         FFN nn1 = nnProvider.apply(0);
         FFN nn2 = nnProvider.apply(1);
 
         if (nn1 == null)
-            throw new NNNotProvidedException(0, "NN 1 must be provided for NN vs NN mode.");
+            throw new NNNotProvidedException("NN 1 must be provided for NN vs NN mode.");
         if (nn2 == null)
-            throw new NNNotProvidedException(1, "NN 2 must be provided for NN vs NN mode.");
+            throw new NNNotProvidedException("NN 2 must be provided for NN vs NN mode.");
 
         NNTab.NNParameters params1 = nnParamsProvider.apply(0);
         NNTab.NNParameters params2 = nnParamsProvider.apply(1);
@@ -490,11 +493,12 @@ public class GameTab extends Tab {
         gameThread.start();
     }
 
+
     private void runHumanVsNNGame() throws NNNotProvidedException {
         FFN nn = nnProvider.apply(0);
 
         if (nn == null)
-            throw new NNNotProvidedException(0, "NN must be provided for Human vs NN mode.");
+            throw new NNNotProvidedException("NN must be provided for Human vs NN mode.");
 
         NNTab.NNParameters params = nnParamsProvider.apply(0);
 
@@ -513,7 +517,7 @@ public class GameTab extends Tab {
                 case "NN (2)" -> {
                     FFN nnPred = nnProvider.apply(1);
                     if (nnPred == null) {
-                        throw new NNNotProvidedException(1, "Predictor NN (2) must be provided for Human vs NN mode.");
+                        throw new NNNotProvidedException("Predictor NN (2) must be provided for Human vs NN mode.");
                     }
                     NNTab.NNParameters predParams = nnParamsProvider.apply(1);
                     predictor = new NNActor(getPlayer(), nnPred, predParams.trainer(), predParams.alpha(), predParams.gamma(), 0);
@@ -550,11 +554,12 @@ public class GameTab extends Tab {
         gameThread.start();
     }
 
+
     private void runNNvsAlgoGame() throws NNNotProvidedException, ExcHandled {
         FFN nn = nnProvider.apply(0);
 
         if (nn == null)
-            throw new NNNotProvidedException(0, "NN must be provided for NN vs Algorithm mode.");
+            throw new NNNotProvidedException("NN must be provided for NN vs Algorithm mode.");
 
         NNTab.NNParameters params = nnParamsProvider.apply(0);
         int dfsStrength = (int) dfsStrengthSlider.getValue();
@@ -592,6 +597,7 @@ public class GameTab extends Tab {
         gameThread.start();
     }
 
+
     private void runHumanVsAlgoGame() throws NNNotProvidedException {
         int dfsStrength = (int) dfsStrengthSlider.getValue();
 
@@ -610,7 +616,7 @@ public class GameTab extends Tab {
                 case "NN (2)" -> {
                     FFN nnPred = nnProvider.apply(1);
                     if (nnPred == null) {
-                        throw new NNNotProvidedException(1, "Predictor NN (2) must be provided for Human vs NN mode.");
+                        throw new NNNotProvidedException("Predictor NN (2) must be provided for Human vs NN mode.");
                     }
                     NNTab.NNParameters predParams = nnParamsProvider.apply(1);
                     predictor = new NNActor(getPlayer(), nnPred, predParams.trainer(), predParams.alpha(), predParams.gamma(), 0);
@@ -740,6 +746,7 @@ public class GameTab extends Tab {
         saveBtn.setDisable(false);
     }
 
+
     private void enableStartGameControls() {
         boolean viewMode = cbMode.getValue().equals(VIEW_MODE);
         boolean nnMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
@@ -766,8 +773,8 @@ public class GameTab extends Tab {
             cbPredictor.setDisable(false);
     }
 
+
     private void disableStartGameControls() {
-        @SuppressWarnings("DuplicatedCode")
         boolean viewMode = cbMode.getValue().equals(VIEW_MODE);
         boolean nnMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_NN)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM));
         boolean algoMode = cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.NN_VS_ALGORITHM)) || cbMode.getValue().equals(modeToStr.get(GameGUI.GAME_MODE.HUMAN_VS_ALGORITHM));

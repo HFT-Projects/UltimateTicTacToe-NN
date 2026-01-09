@@ -1,6 +1,7 @@
 package nn.loss;
 
 public abstract class LossFunction {
+    @SuppressWarnings("SpellCheckingInspection")
     // Fehlergradient "gradient()": Ableitung der Loss-Funktion nach der Knotenausgabe (dL/da)
     // Beschreibt, wie stark sich der Verlust ändert, wenn die Ausgabe des Knotens minimal verändert wird
 
@@ -10,6 +11,7 @@ public abstract class LossFunction {
     // - Für Softmax + CrossEntropy liefert der Fehlergradient direkt die Werte, die als Delta in Backpropagation genutzt werden
     public abstract double[] gradient(double[] prediction, double[] target);
 
+    @SuppressWarnings("unused")
     public abstract double loss(double[] predictions, double[] labels);
 
     @Override

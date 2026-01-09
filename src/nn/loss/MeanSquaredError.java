@@ -3,6 +3,7 @@ package nn.loss;
 public class MeanSquaredError extends LossFunction {
 
     public double[] gradient(double[] predictions, double[] labels) {
+        @SuppressWarnings("SpellCheckingInspection")
         // Fehlergradient: Ableitung der Fehlerfunktion nach der Knotenausgabe
         // d.h. wie stark sich der Verlust ändert, wenn die Ausgabe des Knotens minimal verändert wird
         double[] grad = new double[labels.length];

@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-@SuppressWarnings("unused")
 public final class Utils {
     private Utils() {
     }
@@ -90,6 +89,7 @@ public final class Utils {
 
         Map<WeightInitializer, String> weightInitializerToNameTemp = new java.util.LinkedHashMap<>();
         weightInitializerToNameTemp.put(new WeightInitializerRandom(), "Random");
+        //noinspection SpellCheckingInspection
         weightInitializerToNameTemp.put(new WeightInitializerGlorot(), "Glorot");
         weightInitializerToName = Collections.unmodifiableMap(weightInitializerToNameTemp);
 
@@ -147,6 +147,7 @@ public final class Utils {
         return epsilon / (1 + decayRate * ep);
     }
 
+    @SuppressWarnings("unused")
     public static String boardToString(GlobalBoard board) {
         return boardToString(board, -1, -1);
     }
