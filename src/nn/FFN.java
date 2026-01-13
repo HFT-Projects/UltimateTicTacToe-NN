@@ -115,7 +115,17 @@ public class FFN {
                 for (int k = 0; k < layerSizes[l + 1]; k++) {
                     sum += W[l + 1][k][j] * delta[l + 1][k];
                 }
-                delta[l][j] = sum * hiddenActivation.activateDerivative(z[l][j]);
+                double cDelta = sum * hiddenActivation.activateDerivative(z[l][j]);
+                if (Double.isInfinite(cDelta))
+                    throw new NumberFormatException();
+                // WARNING: NaN deltas can silently break training
+                // this can happen with some activation functions (e.g., tanh) if the input is too large
+                // due to floating point precision limits
+                if (Double.isNaN(cDelta)) {
+                    cDelta = 0.0;
+                    System.err.println("WARNING: NaN delta encountered in net " + this + " at layer " + l + ", neuron " + j);
+                }
+                delta[l][j] = cDelta;
             }
         }
 
