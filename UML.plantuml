@@ -78,6 +78,12 @@ namespace nn {
       + {abstract} equals(obj: Object): boolean
       + hashCode(): int
     }
+
+    class MeanSquaredError extends LossFunction {
+      + gradient(prediction: double[], target: double[]): double[]
+      + loss(predictions: double[], labels: double[]): double
+      + equals(obj: Object): boolean
+    }
   }
 
   namespace activation {
@@ -87,6 +93,54 @@ namespace nn {
       + {abstract} equals(obj: Object): boolean
       + hashCode(): int
     }
+
+    class IdentityFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+
+    class Sigmoid extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide Sigmoid members
+
+    class ExponentialLinearUnitFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide ExponentialLinearUnitFunction members
+
+    class HyperbolicTangentFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide HyperbolicTangentFunction members
+
+    class LeakyReLUFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide LeakyReLUFunction members
+
+    class RectifiedLinearUnitFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide RectifiedLinearUnitFunction members
+
+    class SwishFunction extends ActivationFunction {
+      + activate(x: double): double
+      + activateDerivative(x: double): double
+      + equals(obj: Object): boolean
+    }
+    hide SwishFunction members
   }
 
   namespace initialization {
