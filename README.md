@@ -19,3 +19,7 @@
 There are two main classes: GUI and AutonomousRunner. \
 GUI is the main class intended for use by human and the primary main class. \
 AutonomousRunner is the main class intended to use for automated long-term training of the neural network on a server.
+
+## UML Diagram Notice
+
+The GUI classes are omitted in the UML diagram for simplicity.
