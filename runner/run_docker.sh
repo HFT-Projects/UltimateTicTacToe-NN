@@ -1,0 +1,1 @@
+docker run --rm -v ./workdir:/workdir -w /workdir eclipse-temurin:25 java -jar UltimateTicTacToe-NN-AutonomousRunner.jar

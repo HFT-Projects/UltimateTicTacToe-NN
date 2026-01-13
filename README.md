@@ -13,3 +13,9 @@
     2. Add the following to the VM-options: \
        `--module-path "%javafx-sdk%/lib" --add-modules javafx.controls,javafx.fxml --enable-native-access=javafx.graphics` \
        replace `%javafx-sdk%` with the path of the unarchived javafx sdk.
+
+## Main Classes
+
+There are two main classes: GUI and AutonomousRunner. \
+GUI is the main class intended for use by human and the primary main class. \
+AutonomousRunner is the main class intended to use for automated long-term training of the neural network on a server.

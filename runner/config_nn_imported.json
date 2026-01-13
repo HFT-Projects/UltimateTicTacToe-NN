@@ -1,0 +1,38 @@
+{
+  "print_interval": 10,
+  "mode": "NN_VS_NN",
+  "output_path": "./output",
+  "checkpoint_interval_minutes": 5,
+  "epoch_count": 3000000,
+  "swap_actors_between_epochs": true,
+  "nn_imported_1": {
+    "path": "./net_x.json",
+    "learning_rate": 0.09,
+    "learning_rate_decay": true,
+    "discount_factor": 0.9,
+    "exploration_rate": 0.2,
+    "exploration_rate_decay": true,
+    "trainer": {
+      "type": "Stochastic Gradient Descent"
+    }
+  },
+  "nn_2": {
+    "hidden_layer_sizes": [
+      256,
+      512
+    ],
+    "board_selection_multiplier": 3,
+    "activation_function": "Sigmoid",
+    "loss_function": "MSE",
+    "learning_rate": 0.09,
+    "learning_rate_decay": true,
+    "discount_factor": 0.9,
+    "exploration_rate": 0.2,
+    "exploration_rate_decay": true,
+    "trainer": {
+      "type": "Stochastic Gradient Descent"
+    },
+    "bias_initializer": "Random",
+    "weight_initializer": "Random"
+  }
+}
